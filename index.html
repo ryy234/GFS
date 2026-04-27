@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GFS-CARDGAME</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="logo">GFS-CARDGAME</div>
+    <div style="font-size:.65rem;color:#475569;margin-top:2px;">ゴッドフィールド研究会</div>
+  </header>
+
+  <!-- ── メニュー ── -->
+  <div id="screen-menu" class="screen">
+    <div style="font-size:1.1rem;color:#94a3b8;margin-bottom:4px;">モードを選択</div>
+    <div class="menu-buttons">
+      <button id="btn-vs-cpu" class="btn btn-primary">🤖 vs CPU</button>
+      <button class="btn btn-gold" disabled title="準備中">🌐 オンライン対戦（準備中）</button>
+    </div>
+
+    <div style="background:#13132a;border:1px solid #2d2d5a;border-radius:12px;padding:16px;width:100%;max-width:560px;">
+      <div style="font-weight:700;color:#f59e0b;margin-bottom:10px;font-size:.9rem;">📖 ゲームルール</div>
+      <div style="font-size:.78rem;color:#cbd5e1;line-height:1.7;display:grid;gap:6px;">
+        <div>• HP 20からスタート。相手のHPを0にしたら勝利</div>
+        <div>• PP（プレイポイント）は毎ターン3まで回復。カードのコスト分消費</div>
+        <div>• <span style="color:#e74c3c">⚔️アタック</span>フェーズでアタックカードを出し、合計値で攻撃</div>
+        <div>• <span style="color:#3498db">🛡ブロック</span>フェーズでブロックカードを出し、ダメージを軽減</div>
+        <div>• アタックに使ったPPだけブロックPPが減る！攻防の読み合い</div>
+        <div>• <span style="color:#f59e0b">ライフスティール</span>：与えたダメージ分だけHP回復</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── リーダー選択 ── -->
+  <div id="screen-leader" class="screen hidden">
+    <button id="btn-back-leader" class="btn btn-secondary btn-sm">← 戻る</button>
+    <div style="font-size:1.1rem;font-weight:700;color:#f59e0b;">リーダーを選択してください</div>
+    <div class="leader-grid">
+      <div class="leader-option" data-leader="roti">
+        <img src="card_icon/リーダーカード/%230704%20ろてぃ.png" alt="ろてぃ" onerror="this.style.background='#1a1a2e'">
+        <div class="lo-name">#0704 ろてぃ</div>
+        <div class="lo-effect">カードを3枚プレイするごとに相手に3ダメージ<br><br>専用：フォックスファイア召喚</div>
+      </div>
+      <div class="leader-option" data-leader="popeye">
+        <img src="card_icon/リーダーカード/星の観測者スーパーポパイ.png" alt="スーパーポパイ" onerror="this.style.background='#1a1a2e'">
+        <div class="lo-name">星の観測者<br>スーパーポパイ</div>
+        <div class="lo-effect">カード効果で合計15回復したとき覚醒。全アタックにライフスティール獲得</div>
+      </div>
+      <div class="leader-option" data-leader="autumn">
+        <img src="card_icon/リーダーカード/秋の魔法使い おーたむ.png" alt="おーたむ" onerror="this.style.background='#1a1a2e'">
+        <div class="lo-name">秋の魔法使い<br>おーたむ</div>
+        <div class="lo-effect">ブロック成功（ダメージ0）時、相手に2ダメージ<br><br>専用：おーたむの茨の楽園</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ゲーム画面 ── -->
+  <div id="screen-game" class="screen hidden">
+    <div class="game-layout" style="width:100%;">
+
+      <!-- 左：リーダーカード列 -->
+      <div class="leaders-col">
+        <!-- CPU リーダー -->
+        <div class="leader-card-wrap">
+          <div id="cpu-leader"></div>
+        </div>
+        <div id="cpu-pp" class="pp-row" style="flex-direction:column;gap:3px;"></div>
+
+        <div style="flex:1;"></div>
+
+        <!-- 自分のリーダー -->
+        <div id="player-pp" class="pp-row" style="flex-direction:column;gap:3px;"></div>
+        <div class="leader-card-wrap">
+          <div id="player-leader"></div>
+        </div>
+      </div>
+
+      <!-- 右：メインコンテンツ -->
+      <div class="main-col">
+
+        <!-- CPU HP -->
+        <div class="hp-row">
+          <div class="hp-bar-wrap"><div class="hp-bar" id="cpu-hp-bar" style="width:100%"></div></div>
+          <span class="hp-text" id="cpu-hp-text">HP 15/15</span>
+          <span style="font-size:.7rem;color:#64748b;margin-left:4px;">CPU</span>
+        </div>
+
+        <!-- CPU プレイゾーン -->
+        <div class="zone-wrap">
+          <div class="zone-label" id="cpu-zone-label">🃏 CPU プレイゾーン</div>
+          <div class="zone" id="cpu-play-zone"><div class="zone-empty">—</div></div>
+        </div>
+
+        <!-- 中央：ログ＋操作 -->
+        <div class="center-panel">
+          <div class="battle-log" id="battle-log">
+            <div class="log-line" style="color:#64748b;">ゲーム開始を待っています...</div>
+          </div>
+          <div class="controls">
+            <div class="phase-box">
+              <div id="phase-display">準備中...</div>
+              <div id="round-display">Round 1</div>
+            </div>
+            <button id="btn-end-attack" class="btn btn-danger btn-sm" disabled>アタック終了</button>
+            <button id="btn-end-block"  class="btn btn-info  btn-sm" disabled>ブロック終了</button>
+          </div>
+        </div>
+
+        <!-- 自分プレイゾーン -->
+        <div class="zone-wrap">
+          <div class="zone-label" id="player-zone-label">🃏 あなたのプレイゾーン</div>
+          <div class="zone" id="player-play-zone"><div class="zone-empty">—</div></div>
+        </div>
+
+        <!-- 自分 HP -->
+        <div class="hp-row">
+          <span style="font-size:.7rem;color:#64748b;margin-right:4px;">あなた</span>
+          <div class="hp-bar-wrap"><div class="hp-bar" id="player-hp-bar" style="width:100%"></div></div>
+          <span class="hp-text" id="player-hp-text">HP 15/15</span>
+        </div>
+
+        <!-- 手札 -->
+        <div class="hand-wrap">
+          <div class="hand-label">🃏 手札</div>
+          <div class="hand-area" id="player-hand"></div>
+        </div>
+
+      </div><!-- /main-col -->
+    </div><!-- /game-layout -->
+  </div>
+
+  <!-- ── リザルト ── -->
+  <div id="screen-result" class="screen hidden">
+    <div class="result-box">
+      <div id="result-title">🏆 WIN！</div>
+      <div id="result-msg">GFS-CARDGAMEでの勝利！</div>
+      <div class="result-buttons">
+        <button id="btn-result-retry" class="btn btn-primary">リーダー選択へ</button>
+        <button id="btn-result-menu"  class="btn btn-secondary">メニューへ</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
