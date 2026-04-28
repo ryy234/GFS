@@ -295,11 +295,10 @@ input[type="text"]:focus { outline: none; border-color: var(--accent); }
   scrollbar-color: var(--accent) transparent;
 }
 
-/* ── カード（5:6） ── */
+/* ── カード（イラスト7:5比率） ── */
 .card {
-  width: 112px;
-  height: 134px;
-  min-width: 112px;
+  width: 115px;
+  min-width: 115px;
   border-radius: 9px;
   border: 2px solid var(--card-color, #555);
   background: linear-gradient(160deg, var(--bg3) 0%, #0a0a14 100%);
@@ -315,8 +314,8 @@ input[type="text"]:focus { outline: none; border-color: var(--accent); }
 .card.playable:hover { transform: translateY(-10px) scale(1.05); box-shadow: 0 14px 28px rgba(124,58,237,.55); z-index: 20; }
 .card.disabled { opacity: .5; }
 
-/* ゾーン内カード（さらに小さく） */
-.zone .card { width: 72px; height: 86px; min-width: 72px; }
+/* ゾーン内カード（小さめ） */
+.zone .card { width: 75px; min-width: 75px; }
 .zone .card .card-footer { padding: 1px 3px; }
 .zone .card .card-name { font-size: .5rem; }
 .zone .card .card-stat { font-size: .58rem; }
@@ -327,8 +326,11 @@ input[type="text"]:focus { outline: none; border-color: var(--accent); }
 .card-cost { font-size: .7rem; font-weight: 700; color: #60a5fa; }
 .card-type-label { font-size: .85rem; }
 
+/* イラスト部分 7:5 比率 */
 .card-img-wrap {
-  flex: 1;
+  width: calc(100% - 6px);
+  aspect-ratio: 7 / 5;
+  flex-shrink: 0;
   overflow: hidden;
   background: rgba(0,0,0,.25);
   margin: 0 3px;
@@ -337,35 +339,103 @@ input[type="text"]:focus { outline: none; border-color: var(--accent); }
 }
 .card-img-wrap img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
 
-.card-footer { padding: 2px 5px 3px; flex-shrink: 0; }
-.card-name  { font-size: .68rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); margin-bottom: 1px; }
-.card-stat  { font-size: .76rem; font-weight: 700; color: var(--card-color, #aaa); margin-bottom: 1px; }
-.card-desc  { font-size: .6rem; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-footer { padding: 2px 5px 4px; flex-shrink: 0; }
+.card-name  { font-size: .62rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); margin-bottom: 1px; }
+.card-stat  { font-size: .72rem; font-weight: 700; color: var(--card-color, #aaa); margin-bottom: 1px; }
+.card-desc  { font-size: .56rem; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-badges { display: flex; gap: 2px; margin-top: 1px; }
 .badge { font-size: .46rem; font-weight: 900; padding: 1px 3px; border-radius: 3px; }
 .badge-ls  { background: #dc2626; color: #fff; }
 .badge-ex  { background: var(--gold); color: #000; }
 .badge-gen { background: #7c3aed; color: #fff; }
 
+/* ── CPU 手札（裏面） ── */
+.cpu-hand-area {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  padding: 2px 0;
+  scrollbar-width: none;
+}
+.card-back-thumb {
+  width: 40px;  /* 7:5 → height = 40*5/7 ≈ 28.5px */
+  height: 29px;
+  object-fit: cover;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
 /* ── カードリスト ── */
 .cardlist-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
   gap: 10px;
   width: 100%;
   max-width: 900px;
 }
-.cardlist-item {
-  cursor: pointer;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  overflow: hidden;
-  background: var(--bg2);
-  transition: transform .13s, box-shadow .13s;
+/* cardlist-grid内のカードにホバー効果 */
+.cardlist-grid .card { cursor: pointer; }
+.cardlist-grid .card:hover { transform: translateY(-6px) scale(1.04); box-shadow: 0 10px 24px rgba(124,58,237,.5); z-index: 10; }
+
+/* ── 専用カード発動演出 ── */
+.exclusive-anim-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,.75);
+  display: flex; align-items: center; justify-content: center;
+  animation: exclIn .3s ease;
 }
-.cardlist-item:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(124,58,237,.45); }
-.cardlist-item img { width: 100%; aspect-ratio: 5/6; object-fit: cover; display: block; }
-.cardlist-item-name { font-size: .62rem; padding: 4px; text-align: center; font-weight: 700; background: rgba(0,0,0,.4); }
+.exclusive-anim-overlay.exclusive-fade-out { animation: exclOut .5s ease forwards; }
+.exclusive-anim-box {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  animation: exclCardPop .4s cubic-bezier(.17,.67,.83,.67);
+}
+.exclusive-anim-label {
+  font-size: 1.1rem; font-weight: 900; color: var(--gold);
+  text-shadow: 0 0 12px var(--gold);
+  letter-spacing: 2px;
+}
+.exclusive-anim-img {
+  width: 220px; aspect-ratio: 7/5; object-fit: cover;
+  border-radius: 12px;
+  border: 3px solid var(--gold);
+  box-shadow: 0 0 40px var(--gold);
+}
+.exclusive-anim-name {
+  font-size: .95rem; font-weight: 700; color: var(--text);
+  background: rgba(0,0,0,.5); padding: 4px 12px; border-radius: 8px;
+}
+@keyframes exclIn      { from { opacity: 0 } to { opacity: 1 } }
+@keyframes exclOut     { from { opacity: 1 } to { opacity: 0 } }
+@keyframes exclCardPop {
+  0%   { transform: scale(0.3) rotate(-8deg); opacity: 0; }
+  60%  { transform: scale(1.08) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+/* ── ダメージ演出 ── */
+.damage-anim {
+  position: fixed;
+  z-index: 900;
+  transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  pointer-events: none;
+  animation: dmgAnim 1.4s ease forwards;
+}
+.damage-img { width: 80px; height: auto; filter: drop-shadow(0 0 8px #ef4444); }
+.damage-text {
+  font-size: 1.3rem; font-weight: 900; color: #f87171;
+  text-shadow: 0 0 8px #000, 0 0 4px #000, 0 2px 0 #000;
+  white-space: nowrap;
+}
+@keyframes dmgAnim {
+  0%   { opacity: 0; transform: translate(-50%, -80%) scale(0.4); }
+  25%  { opacity: 1; transform: translate(-50%, -50%) scale(1.3); }
+  55%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  85%  { opacity: .7; transform: translate(-50%, -40%); }
+  100% { opacity: 0; transform: translate(-50%, -30%); }
+}
 
 /* モーダル */
 .card-modal { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; }

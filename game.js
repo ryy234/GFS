@@ -29,14 +29,14 @@ const LEADERS = [
 const CARDS = [
   // Attack
   { id: 'natsuemon',     name: 'なつえもん',               image: 'card_icon/natsuemon.webp',                              type: 'attack',  cost: 1, atk: 2,                                                desc: 'ATK 2' },
-  { id: 'tamuemon',      name: 'たむえもん',               image: 'card_icon/tamuemon.webp',                               type: 'attack',  cost: 2, atk: 3,                                                desc: 'ATK 3' },
+  { id: 'tamuemon',      name: 'たむえもん',               image: 'card_icon/tamuemon.webp',                               type: 'attack',  cost: 2, atk: 4,                                                desc: 'ATK 4' },
   { id: 'abandoned_dog', name: '捨てられた犬',             image: 'card_icon/捨てられた犬.webp',                           type: 'attack',  cost: 1, atk: 2,                                                desc: 'ATK 2' },
   { id: 'bite',          name: '噛みつく',                 image: 'card_icon/噛みつく.webp',                               type: 'attack',  cost: 1, atk: 1, lifesteal: true,                               desc: 'ATK 1　ライフスティール' },
-  { id: 'kopuemon',      name: 'こぷえもん',               image: 'card_icon/こぷえもん.webp',                             type: 'attack',  cost: 2, atk: 2, lifesteal: true,                               desc: 'ATK 2　ライフスティール' },
-  { id: 'kirby',         name: '星のコービィ',             image: 'card_icon/星のコービィ.jpg',                           type: 'attack',  cost: 2, atk: 2, effect: { type: 'draw', value: 1 },            desc: 'ATK 2　カード1枚ドロー' },
+  { id: 'kopuemon',      name: 'こぷえもん',               image: 'card_icon/こぷえもん.webp',                             type: 'attack',  cost: 2, atk: 3, lifesteal: true,                               desc: 'ATK 3　ライフスティール' },
+  { id: 'kirby',         name: '星のコービィ',             image: 'card_icon/星のコービィ.jpg',                           type: 'attack',  cost: 2, atk: 3, effect: { type: 'draw', value: 1 },            desc: 'ATK 3　カード1枚ドロー' },
   { id: 'running_koup',  name: '走るこうぷ',               image: 'card_icon/走るこうぷ.webp',                             type: 'attack',  cost: 1, atk: 1, effect: { type: 'pp',   value: 1 },            desc: 'ATK 1　PP+1' },
-  { id: 'sion',          name: 'サイオンGFSフォルム',      image: 'card_icon/サイオンGFSフォルム.webp',                    type: 'attack',  cost: 3, atk: 5,                                                desc: 'ATK 5' },
-  { id: 'monster',       name: '化け物',                   image: 'card_icon/化け物.webp',                                 type: 'attack',  cost: 3, atk: 4, lifesteal: true,                               desc: 'ATK 4　ライフスティール' },
+  { id: 'sion',          name: 'サイオンGFSフォルム',      image: 'card_icon/サイオンGFSフォルム.webp',                    type: 'attack',  cost: 3, atk: 7,                                                desc: 'ATK 7' },
+  { id: 'monster',       name: '化け物',                   image: 'card_icon/化け物.webp',                                 type: 'attack',  cost: 3, atk: 5, lifesteal: true,                               desc: 'ATK 5　ライフスティール' },
   { id: 'demacia',       name: 'ﾃﾞﾏｰｼｱｱｱｱｱｱｱｱｱｱｱｱｱｱ',   image: 'card_icon/ﾃﾞﾏｰｼｱｱｱｱｱｱｱｱｱｱｱｱｱｱ.webp',              type: 'attack',  cost: 2, atk: 3, effect: { type: 'pp',   value: 1 },            desc: 'ATK 3　PP+1' },
   // Block
   { id: 'hamumu',        name: 'ハムム',                   image: 'card_icon/ハムム.webp',                                 type: 'block',   cost: 1, block: 2,                                              desc: 'ブロック 2' },
@@ -86,7 +86,9 @@ function createDeck(leaderId) {
   CARDS.forEach(c => {
     if (c.generated) return;
     if (c.exclusive && c.exclusive !== leaderId) return;
-    deck.push(c.id, c.id); // 2 copies each
+    // 専用カードは3枚（≈1.5x）で引き確率アップ、通常は2枚
+    const copies = (c.exclusive === leaderId) ? 3 : 2;
+    for (let i = 0; i < copies; i++) deck.push(c.id);
   });
   return shuffle(deck);
 }
@@ -94,7 +96,7 @@ function createDeck(leaderId) {
 function createPlayer(leaderId) {
   const deck = createDeck(leaderId);
   return {
-    hp: 15,
+    hp: 30,
     hand: deck.splice(0, 4),
     deck,
     leaderId,
@@ -193,13 +195,14 @@ const G = {
     if (c.type === 'attack') {
       actor.attackZone.push(cardId);
       this.addLog(`⚔️ ${c.name}（ATK ${c.atk}）を出した`);
-      // アタックカードの即時効果（ドロー・PP回復）
       if (c.effect?.type === 'draw') this._applyDraw(actor, c.effect.value);
       if (c.effect?.type === 'pp')   { actor.pp = Math.min(3, actor.pp + c.effect.value); this.addLog(`💎 PP+${c.effect.value}`); }
     } else if (c.type === 'support') {
       this.addLog(`✨ ${c.name}を発動`);
       this._applySupport(actor, target, c);
     }
+    // 専用カード演出（プレイヤーが使った時のみ）
+    if (c.exclusive && actor === this.player) UI._showExclusiveAnimation(c);
 
     // リーダー効果：カード枚数カウント
     this._leaderOnCard(actor, cardId);
@@ -238,14 +241,14 @@ const G = {
 
   _applyHeal(actor, amount) {
     const prev = actor.hp;
-    actor.hp = Math.min(15,actor.hp + amount);
+    actor.hp = Math.min(30,actor.hp + amount);
     const healed = actor.hp - prev;
     if (healed > 0) {
-      this.addLog(`💚 HP+${healed}回復（${actor.hp}/15）`);
+      this.addLog(`💚 HP+${healed}回復（${actor.hp}/30）`);
       // スーパーポパイ覚醒チェック
       if (actor.leaderId === 'popeye' && !actor.popeyeAwake) {
         actor.popeyeHealTotal += healed;
-        if (actor.popeyeHealTotal >= 15) {
+        if (actor.popeyeHealTotal >= 20) {
           actor.popeyeAwake = true;
           this.addLog(`⭐ スーパーポパイ覚醒！全アタックにライフスティール！`);
         }
@@ -271,7 +274,7 @@ const G = {
       actor.rotiCardsPlayed++;
       if (actor.rotiCardsPlayed % 3 === 0) {
         opponent.hp = Math.max(0, opponent.hp - 2);
-        this.addLog(`🦊 ろてぃリーダー効果：相手に2ダメージ！（${opponent.hp}/15）`);
+        this.addLog(`🦊 ろてぃリーダー効果：相手に2ダメージ！（${opponent.hp}/30）`);
         this._checkWin();
       }
     }
@@ -331,8 +334,10 @@ const G = {
 
     if (damage > 0) {
       defender.hp = Math.max(0, defender.hp - damage);
-      this.addLog(`💥 ${damage}ダメージ！（${defender.hp}/15）`);
-      // LSカードの割合分だけ回復（全カードLS扱いにならないよう修正）
+      this.addLog(`💥 ${damage}ダメージ！（${defender.hp}/30）`);
+      // ダメージ演出
+      const defWho = defender === this.player ? 'player' : 'cpu';
+      UI._showDamageAnimation(defWho, damage);
       const lsHeal = this._calcLifeStealHeal(attacker, damage);
       if (lsHeal > 0) this._applyHeal(attacker, lsHeal);
     }
@@ -507,14 +512,11 @@ const UI = {
     if (!grid) return;
     grid.innerHTML = '';
     CARDS.filter(c => !c.generated).forEach(card => {
-      const item = document.createElement('div');
-      item.className = 'cardlist-item';
-      item.innerHTML = `
-        <img src="${card.image}" alt="${card.name}" loading="lazy" onerror="this.parentNode.style.background='#1a1a2e'">
-        <div class="cardlist-item-name" style="color:${TYPE_COLOR[card.type] || '#aaa'}">${card.name}</div>
-      `;
-      item.onclick = () => this.showCardDetail(card);
-      grid.appendChild(item);
+      // プレイ中と同じカードコンポーネントを使用
+      const el = this._makeCard(card, card.cost, false);
+      el.style.cursor = 'pointer';
+      el.onclick = () => this.showCardDetail(card);
+      grid.appendChild(el);
     });
     this.show('cardlist');
   },
@@ -548,6 +550,51 @@ const UI = {
 
   closeCardModal() {
     document.getElementById('card-detail-modal')?.classList.add('hidden');
+  },
+
+  // CPU手札を裏面で表示
+  _renderCpuHand(count) {
+    const el = document.getElementById('cpu-hand-display');
+    if (!el) return;
+    el.innerHTML = Array(count).fill(0).map(() =>
+      `<img class="card-back-thumb" src="card_icon/GFSカード_裏面.png" alt="card back" onerror="this.style.background='#1a1a2e'">`
+    ).join('');
+  },
+
+  // 専用カード発動演出
+  _showExclusiveAnimation(card) {
+    const overlay = document.createElement('div');
+    overlay.className = 'exclusive-anim-overlay';
+    overlay.innerHTML = `
+      <div class="exclusive-anim-box">
+        <div class="exclusive-anim-label">✨ 専用カード発動！</div>
+        <img src="${card.image}" class="exclusive-anim-img" alt="${card.name}" onerror="this.src=''">
+        <div class="exclusive-anim-name">${card.name}</div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    setTimeout(() => {
+      overlay.classList.add('exclusive-fade-out');
+      setTimeout(() => overlay.remove(), 500);
+    }, 1600);
+  },
+
+  // ダメージ演出（リーダーの上にdamage.png + テキスト）
+  _showDamageAnimation(who, amount) {
+    const targetId = who === 'player' ? 'player-leader-block' : 'cpu-leader-block';
+    const targetEl = document.getElementById(targetId);
+    if (!targetEl) return;
+    const rect = targetEl.getBoundingClientRect();
+    const el = document.createElement('div');
+    el.className = 'damage-anim';
+    el.style.left = `${rect.left + rect.width / 2}px`;
+    el.style.top  = `${rect.top  + rect.height / 2}px`;
+    el.innerHTML  = `
+      <img src="card_icon/damage.png" class="damage-img" alt="damage" onerror="this.style.display='none'">
+      <div class="damage-text">${amount} ダメージ！</div>
+    `;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1400);
   },
 
   render() {
@@ -584,6 +631,7 @@ const UI = {
 
     this._renderZone('cpu-play-zone',    [...c.attackZone, ...c.blockZone]);
     this._renderZone('player-play-zone', [...p.attackZone, ...p.blockZone]);
+    this._renderCpuHand(c.hand.length);
     this._renderHand(p, isAttackPhase, isBlockPhase);
 
     document.getElementById('btn-end-attack').disabled = !isAttackPhase;
@@ -600,7 +648,7 @@ const UI = {
     const imgSrc = (leaderId === 'popeye' && awake)
       ? 'card_icon/リーダーカード/星の観測者スーパーポパイ_覚醒状態.png'
       : leader.image;
-    const hpColor = hp > 10 ? '#4ade80' : hp > 5 ? '#fbbf24' : '#f87171';
+    const hpColor = hp > 20 ? '#4ade80' : hp > 10 ? '#fbbf24' : '#f87171';
     const dots = [0,1,2].map(i => `<span class="pp-dot ${i < pp ? 'filled' : ''}"></span>`).join('');
     el.innerHTML = `
       <div class="leader-block ${awake ? 'awake' : ''}">

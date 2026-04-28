@@ -18,14 +18,14 @@ const MIME = {
 // ── カード定義 ──────────────────────────────────────────────────────────────
 const CARDS_S = [
   { id: 'natsuemon',       type: 'attack',  cost: 1, atk: 2 },
-  { id: 'tamuemon',        type: 'attack',  cost: 2, atk: 3 },
+  { id: 'tamuemon',        type: 'attack',  cost: 2, atk: 4 },
   { id: 'abandoned_dog',   type: 'attack',  cost: 1, atk: 2 },
   { id: 'bite',            type: 'attack',  cost: 1, atk: 1, lifesteal: true },
-  { id: 'kopuemon',        type: 'attack',  cost: 2, atk: 2, lifesteal: true },
-  { id: 'kirby',           type: 'attack',  cost: 2, atk: 2, effect: { type: 'draw', value: 1 } },
+  { id: 'kopuemon',        type: 'attack',  cost: 2, atk: 3, lifesteal: true },
+  { id: 'kirby',           type: 'attack',  cost: 2, atk: 3, effect: { type: 'draw', value: 1 } },
   { id: 'running_koup',    type: 'attack',  cost: 1, atk: 1, effect: { type: 'pp',   value: 1 } },
-  { id: 'sion',            type: 'attack',  cost: 3, atk: 5 },
-  { id: 'monster',         type: 'attack',  cost: 3, atk: 4, lifesteal: true },
+  { id: 'sion',            type: 'attack',  cost: 3, atk: 7 },
+  { id: 'monster',         type: 'attack',  cost: 3, atk: 5, lifesteal: true },
   { id: 'demacia',         type: 'attack',  cost: 2, atk: 3, effect: { type: 'pp',   value: 1 } },
   { id: 'hamumu',          type: 'block',   cost: 1, block: 2 },
   { id: 'cupid',           type: 'block',   cost: 2, block: 3, effect: { type: 'draw', value: 1 } },
@@ -71,13 +71,13 @@ function drawCards(p, n) {
 
 function applyHeal(gs, p, amount) {
   const prev = p.hp;
-  p.hp = Math.min(15, p.hp + amount);
+  p.hp = Math.min(30, p.hp + amount);
   const healed = p.hp - prev;
   if (healed > 0) {
     addLog(gs, `💚 HP+${healed}回復（${p.hp}/15）`);
     if (p.leaderId === 'popeye' && !p.popeyeAwake) {
       p.popeyeHealTotal += healed;
-      if (p.popeyeHealTotal >= 15) {
+      if (p.popeyeHealTotal >= 20) {
         p.popeyeAwake = true;
         addLog(gs, `⭐ スーパーポパイ覚醒！全アタックにLS！`);
       }
@@ -120,7 +120,7 @@ function checkWin(gs) {
 // ── ゲーム作成 ──────────────────────────────────────────────────────────────
 function createPlayerState(leaderId) {
   const deck = createDeck(leaderId);
-  return { hp: 15, hand: deck.splice(0, 4), deck, leaderId, pp: 3, attackPPSpent: 0, blockPP: 3, attackZone: [], blockZone: [], doubleNextAttack: false, rotiCardsPlayed: 0, popeyeHealTotal: 0, popeyeAwake: false };
+  return { hp: 30, hand: deck.splice(0, 4), deck, leaderId, pp: 3, attackPPSpent: 0, blockPP: 3, attackZone: [], blockZone: [], doubleNextAttack: false, rotiCardsPlayed: 0, popeyeHealTotal: 0, popeyeAwake: false };
 }
 
 function createGame(p1Leader, p2Leader) {
