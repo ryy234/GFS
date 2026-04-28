@@ -313,6 +313,8 @@ input[type="text"]:focus { outline: none; border-color: var(--accent); }
 .card.playable { cursor: pointer; box-shadow: 0 0 8px rgba(124,58,237,.35); }
 .card.playable:hover { transform: translateY(-10px) scale(1.05); box-shadow: 0 14px 28px rgba(124,58,237,.55); z-index: 20; }
 .card.disabled { opacity: .5; }
+.card.preview  { opacity: 1; cursor: pointer; }
+.card.card-enlarged { width: 210px !important; min-width: 210px !important; cursor: default; }
 
 /* ゾーン内カード（小さめ） */
 .zone .card { width: 75px; min-width: 75px; }
@@ -343,7 +345,8 @@ input[type="text"]:focus { outline: none; border-color: var(--accent); }
 .card-name  { font-size: .62rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); margin-bottom: 1px; }
 .card-stat  { font-size: .72rem; font-weight: 700; color: var(--card-color, #aaa); margin-bottom: 1px; }
 .card-desc  { font-size: .56rem; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.card-badges { display: flex; gap: 2px; margin-top: 1px; }
+.card-badges { display: flex; gap: 2px; margin-top: 1px; min-height: 13px; }
+.badge-spacer { display: inline-block; width: 1px; height: 11px; }
 .badge { font-size: .46rem; font-weight: 900; padding: 1px 3px; border-radius: 3px; }
 .badge-ls  { background: #dc2626; color: #fff; }
 .badge-ex  { background: var(--gold); color: #000; }

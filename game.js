@@ -39,7 +39,8 @@ const CARDS = [
   { id: 'monster',       name: '化け物',                   image: 'card_icon/化け物.webp',                                 type: 'attack',  cost: 3, atk: 5, lifesteal: true,                               desc: 'ATK 5　ライフスティール' },
   { id: 'demacia',       name: 'ﾃﾞﾏｰｼｱｱｱｱｱｱｱｱｱｱｱｱｱｱ',   image: 'card_icon/ﾃﾞﾏｰｼｱｱｱｱｱｱｱｱｱｱｱｱｱｱ.webp',              type: 'attack',  cost: 2, atk: 3, effect: { type: 'pp',   value: 1 },            desc: 'ATK 3　PP+1' },
   // Block
-  { id: 'hamumu',        name: 'ハムム',                   image: 'card_icon/ハムム.webp',                                 type: 'block',   cost: 1, block: 2,                                              desc: 'ブロック 2' },
+  { id: 'hamumu',        name: 'ハムム',                   image: 'card_icon/ハムム.webp',                                 type: 'block',   cost: 2, block: 4,                                              desc: 'ブロック 4' },
+  { id: 'blockman',     name: 'ブロックマン',              image: 'card_icon/ブロックマン.png',                             type: 'block',   cost: 3, block: 7,                                              desc: 'ブロック 7' },
   { id: 'cupid',         name: '恋のキュービット',         image: 'card_icon/恋のキュービット.webp',                       type: 'block',   cost: 2, block: 3, effect: { type: 'draw', value: 1 },         desc: 'ブロック 3　カード1枚ドロー' },
   { id: 'hey_guys',      name: 'hey,guys!',                image: 'card_icon/hey,guys.webp',                               type: 'block',   cost: 1, block: 2, effect: { type: 'heal', value: 1 },         desc: 'ブロック 2　HP+1回復' },
   // Support
@@ -47,6 +48,7 @@ const CARDS = [
   { id: 'album1',        name: 'GFSアルバム Vol.1',        image: 'card_icon/album_2025-04-29_02-41-49.gif',               type: 'support', cost: 2, effect: { type: 'heal', value: 4 },                   desc: 'HP 4回復' },
   { id: 'album2',        name: 'GFSアルバム Vol.2',        image: 'card_icon/album_2025-05-18_02-53-31.gif',               type: 'support', cost: 3, effect: { type: 'double_atk' },                       desc: '次のターンのアタックを2倍' },
   { id: 'mystery',       name: '謎のカード',               image: 'card_icon/ランプの魔人.webp',          type: 'support', cost: 1, effect: { type: 'draw', value: 2 },                   desc: 'カード2枚ドロー' },
+  { id: 'mari_tanuki',  name: 'マリのたぬき',              image: 'card_icon/マリのたぬき.jpg',             type: 'support', cost: 2, effect: { type: 'heal_draw', heal: 1, draw: 3 },         desc: 'カード3枚ドロー＋HP1回復' },
   // Leader Exclusive
   { id: 'darkin',        name: 'ダーキンの兆し',          image: 'card_icon/ダ―キンの兆し.png',                               type: 'support', cost: 2, exclusive: 'popeye', effect: { type: 'heal_draw', heal: 3, draw: 1 }, desc: 'HP 3回復＋カード1枚ドロー' },
   { id: 'roti_foxfire',  name: 'フォックスファイア召喚',  image: 'card_icon/ろてぃのフォックスファイア.png',              type: 'support', cost: 1, exclusive: 'roti',    effect: { type: 'add_foxfire', value: 3 }, desc: 'フォックスファイア×3を手札に加える' },
@@ -96,7 +98,7 @@ function createDeck(leaderId) {
 function createPlayer(leaderId) {
   const deck = createDeck(leaderId);
   return {
-    hp: 30,
+    hp: 20,
     hand: deck.splice(0, 4),
     deck,
     leaderId,
@@ -241,14 +243,14 @@ const G = {
 
   _applyHeal(actor, amount) {
     const prev = actor.hp;
-    actor.hp = Math.min(30,actor.hp + amount);
+    actor.hp = Math.min(20,actor.hp + amount);
     const healed = actor.hp - prev;
     if (healed > 0) {
-      this.addLog(`💚 HP+${healed}回復（${actor.hp}/30）`);
+      this.addLog(`💚 HP+${healed}回復（${actor.hp}/20）`);
       // スーパーポパイ覚醒チェック
       if (actor.leaderId === 'popeye' && !actor.popeyeAwake) {
         actor.popeyeHealTotal += healed;
-        if (actor.popeyeHealTotal >= 20) {
+        if (actor.popeyeHealTotal >= 13) {
           actor.popeyeAwake = true;
           this.addLog(`⭐ スーパーポパイ覚醒！全アタックにライフスティール！`);
         }
@@ -274,7 +276,7 @@ const G = {
       actor.rotiCardsPlayed++;
       if (actor.rotiCardsPlayed % 3 === 0) {
         opponent.hp = Math.max(0, opponent.hp - 2);
-        this.addLog(`🦊 ろてぃリーダー効果：相手に2ダメージ！（${opponent.hp}/30）`);
+        this.addLog(`🦊 ろてぃリーダー効果：相手に2ダメージ！（${opponent.hp}/20）`);
         this._checkWin();
       }
     }
@@ -334,7 +336,7 @@ const G = {
 
     if (damage > 0) {
       defender.hp = Math.max(0, defender.hp - damage);
-      this.addLog(`💥 ${damage}ダメージ！（${defender.hp}/30）`);
+      this.addLog(`💥 ${damage}ダメージ！（${defender.hp}/20）`);
       // ダメージ演出
       const defWho = defender === this.player ? 'player' : 'cpu';
       UI._showDamageAnimation(defWho, damage);
@@ -512,9 +514,10 @@ const UI = {
     if (!grid) return;
     grid.innerHTML = '';
     CARDS.filter(c => !c.generated).forEach(card => {
-      // プレイ中と同じカードコンポーネントを使用
       const el = this._makeCard(card, card.cost, false);
-      el.style.cursor = 'pointer';
+      // 暗くならないようdisabledを外してpreviewクラスにする
+      el.classList.remove('disabled');
+      el.classList.add('preview');
       el.onclick = () => this.showCardDetail(card);
       grid.appendChild(el);
     });
@@ -525,26 +528,12 @@ const UI = {
     const modal = document.getElementById('card-detail-modal');
     const inner = document.getElementById('card-modal-inner');
     if (!modal || !inner) return;
-    const statLine = card.type === 'attack'
-      ? `⚔️ ATK ${card.atk}`
-      : card.type === 'block'
-      ? `🛡 BLK ${card.block}${card.counter ? ' ／ 反撃' + card.counter : ''}`
-      : '✨ サポート';
-    const tags = [
-      card.lifesteal ? '🩸 ライフスティール' : '',
-      card.exclusive ? `🌟 専用カード（${LEADER_MAP[card.exclusive]?.name || card.exclusive}）` : '',
-    ].filter(Boolean).map(t => `<div class="cmd-badge">${t}</div>`).join('');
-    inner.innerHTML = `
-      <img src="${card.image}" alt="${card.name}" onerror="this.style.background='#1a1a2e'">
-      <div class="card-modal-info">
-        <div class="cmd-name">${card.name}</div>
-        <div class="cmd-type" style="color:${TYPE_COLOR[card.type] || '#aaa'}">${card.type.toUpperCase()}</div>
-        <div class="cmd-cost">コスト：${card.cost} 💎</div>
-        <div class="cmd-stat">${statLine}</div>
-        <div class="cmd-desc">${card.desc}</div>
-        ${tags}
-      </div>
-    `;
+    // プレイ中と同じ構造のカードをそのまま拡大表示
+    const bigCard = this._makeCard(card, card.cost, false);
+    bigCard.classList.remove('disabled');
+    bigCard.classList.add('preview', 'card-enlarged');
+    inner.innerHTML = '';
+    inner.appendChild(bigCard);
     modal.classList.remove('hidden');
   },
 
@@ -567,7 +556,6 @@ const UI = {
     overlay.className = 'exclusive-anim-overlay';
     overlay.innerHTML = `
       <div class="exclusive-anim-box">
-        <div class="exclusive-anim-label">✨ 専用カード発動！</div>
         <img src="${card.image}" class="exclusive-anim-img" alt="${card.name}" onerror="this.src=''">
         <div class="exclusive-anim-name">${card.name}</div>
       </div>
@@ -648,7 +636,7 @@ const UI = {
     const imgSrc = (leaderId === 'popeye' && awake)
       ? 'card_icon/リーダーカード/星の観測者スーパーポパイ_覚醒状態.png'
       : leader.image;
-    const hpColor = hp > 20 ? '#4ade80' : hp > 10 ? '#fbbf24' : '#f87171';
+    const hpColor = hp > 13 ? '#4ade80' : hp > 7 ? '#fbbf24' : '#f87171';
     const dots = [0,1,2].map(i => `<span class="pp-dot ${i < pp ? 'filled' : ''}"></span>`).join('');
     el.innerHTML = `
       <div class="leader-block ${awake ? 'awake' : ''}">
@@ -769,7 +757,7 @@ const UI = {
         <div class="card-name">${card.name}</div>
         <div class="card-stat">${statLine}</div>
         <div class="card-desc">${card.desc}</div>
-        <div class="card-badges">${badges.join('')}</div>
+        <div class="card-badges">${badges.length ? badges.join('') : '<span class="badge-spacer"></span>'}</div>
       </div>
     `;
     return el;

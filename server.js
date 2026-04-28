@@ -27,7 +27,9 @@ const CARDS_S = [
   { id: 'sion',            type: 'attack',  cost: 3, atk: 7 },
   { id: 'monster',         type: 'attack',  cost: 3, atk: 5, lifesteal: true },
   { id: 'demacia',         type: 'attack',  cost: 2, atk: 3, effect: { type: 'pp',   value: 1 } },
-  { id: 'hamumu',          type: 'block',   cost: 1, block: 2 },
+  { id: 'hamumu',          type: 'block',   cost: 2, block: 4 },
+  { id: 'blockman',        type: 'block',   cost: 3, block: 7 },
+  { id: 'mari_tanuki',     type: 'support', cost: 2, effect: { type: 'heal_draw', heal: 1, draw: 3 } },
   { id: 'cupid',           type: 'block',   cost: 2, block: 3, effect: { type: 'draw', value: 1 } },
   { id: 'hey_guys',        type: 'block',   cost: 1, block: 2, effect: { type: 'heal', value: 1 } },
   { id: 'ton_tears',       type: 'support', cost: 1, effect: { type: 'heal', value: 2 } },
@@ -71,13 +73,13 @@ function drawCards(p, n) {
 
 function applyHeal(gs, p, amount) {
   const prev = p.hp;
-  p.hp = Math.min(30, p.hp + amount);
+  p.hp = Math.min(20, p.hp + amount);
   const healed = p.hp - prev;
   if (healed > 0) {
     addLog(gs, `💚 HP+${healed}回復（${p.hp}/15）`);
     if (p.leaderId === 'popeye' && !p.popeyeAwake) {
       p.popeyeHealTotal += healed;
-      if (p.popeyeHealTotal >= 20) {
+      if (p.popeyeHealTotal >= 13) {
         p.popeyeAwake = true;
         addLog(gs, `⭐ スーパーポパイ覚醒！全アタックにLS！`);
       }
@@ -120,7 +122,7 @@ function checkWin(gs) {
 // ── ゲーム作成 ──────────────────────────────────────────────────────────────
 function createPlayerState(leaderId) {
   const deck = createDeck(leaderId);
-  return { hp: 30, hand: deck.splice(0, 4), deck, leaderId, pp: 3, attackPPSpent: 0, blockPP: 3, attackZone: [], blockZone: [], doubleNextAttack: false, rotiCardsPlayed: 0, popeyeHealTotal: 0, popeyeAwake: false };
+  return { hp: 20, hand: deck.splice(0, 4), deck, leaderId, pp: 3, attackPPSpent: 0, blockPP: 3, attackZone: [], blockZone: [], doubleNextAttack: false, rotiCardsPlayed: 0, popeyeHealTotal: 0, popeyeAwake: false };
 }
 
 function createGame(p1Leader, p2Leader) {
