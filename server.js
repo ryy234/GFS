@@ -15,31 +15,32 @@ const MIME = {
   '.gif':  'image/gif',
 };
 
-// ── カード定義（サーバー用） ─────────────────────────────────────────────
+// ── カード定義 ──────────────────────────────────────────────────────────────
 const CARDS_S = [
-  { id: 'natsuemon',      type: 'attack',  cost: 1, atk: 2 },
-  { id: 'tamuemon',       type: 'attack',  cost: 2, atk: 3 },
-  { id: 'abandoned_dog',  type: 'attack',  cost: 1, atk: 2 },
-  { id: 'bite',           type: 'attack',  cost: 1, atk: 1, lifesteal: true },
-  { id: 'kopuemon',       type: 'attack',  cost: 2, atk: 2, lifesteal: true },
-  { id: 'kirby',          type: 'attack',  cost: 2, atk: 2, effect: { type: 'draw', value: 1 } },
-  { id: 'running_koup',   type: 'attack',  cost: 1, atk: 1, effect: { type: 'pp',   value: 1 } },
-  { id: 'sion',           type: 'attack',  cost: 3, atk: 5 },
-  { id: 'monster',        type: 'attack',  cost: 3, atk: 4, lifesteal: true },
-  { id: 'demacia',        type: 'attack',  cost: 2, atk: 3, effect: { type: 'pp',   value: 1 } },
-  { id: 'hamumu',         type: 'block',   cost: 1, block: 2 },
-  { id: 'cupid',          type: 'block',   cost: 2, block: 3, effect: { type: 'draw', value: 1 } },
-  { id: 'hey_guys',       type: 'block',   cost: 1, block: 2, effect: { type: 'heal', value: 1 } },
-  { id: 'ton_tears',      type: 'support', cost: 1, effect: { type: 'heal', value: 2 } },
-  { id: 'album1',         type: 'support', cost: 2, effect: { type: 'heal', value: 4 } },
-  { id: 'album2',         type: 'support', cost: 3, effect: { type: 'double_atk' } },
-  { id: 'mystery',        type: 'support', cost: 1, effect: { type: 'draw', value: 2 } },
-  { id: 'roti_foxfire',   type: 'support', cost: 1, exclusive: 'roti',   effect: { type: 'add_foxfire', value: 3 } },
-  { id: 'autumn_paradise',type: 'block',   cost: 2, block: 5, counter: 1, exclusive: 'autumn' },
-  { id: 'foxfire',        type: 'attack',  cost: 0, atk: 1, lifesteal: true, generated: true },
+  { id: 'natsuemon',       type: 'attack',  cost: 1, atk: 2 },
+  { id: 'tamuemon',        type: 'attack',  cost: 2, atk: 3 },
+  { id: 'abandoned_dog',   type: 'attack',  cost: 1, atk: 2 },
+  { id: 'bite',            type: 'attack',  cost: 1, atk: 1, lifesteal: true },
+  { id: 'kopuemon',        type: 'attack',  cost: 2, atk: 2, lifesteal: true },
+  { id: 'kirby',           type: 'attack',  cost: 2, atk: 2, effect: { type: 'draw', value: 1 } },
+  { id: 'running_koup',    type: 'attack',  cost: 1, atk: 1, effect: { type: 'pp',   value: 1 } },
+  { id: 'sion',            type: 'attack',  cost: 3, atk: 5 },
+  { id: 'monster',         type: 'attack',  cost: 3, atk: 4, lifesteal: true },
+  { id: 'demacia',         type: 'attack',  cost: 2, atk: 3, effect: { type: 'pp',   value: 1 } },
+  { id: 'hamumu',          type: 'block',   cost: 1, block: 2 },
+  { id: 'cupid',           type: 'block',   cost: 2, block: 3, effect: { type: 'draw', value: 1 } },
+  { id: 'hey_guys',        type: 'block',   cost: 1, block: 2, effect: { type: 'heal', value: 1 } },
+  { id: 'ton_tears',       type: 'support', cost: 1, effect: { type: 'heal', value: 2 } },
+  { id: 'album1',          type: 'support', cost: 2, effect: { type: 'heal', value: 4 } },
+  { id: 'album2',          type: 'support', cost: 3, effect: { type: 'double_atk' } },
+  { id: 'mystery',         type: 'support', cost: 1, effect: { type: 'draw', value: 2 } },
+  { id: 'roti_foxfire',    type: 'support', cost: 1, exclusive: 'roti',   effect: { type: 'add_foxfire', value: 3 } },
+  { id: 'autumn_paradise', type: 'block',   cost: 2, block: 5, counter: 1, exclusive: 'autumn' },
+  { id: 'foxfire',         type: 'attack',  cost: 0, atk: 1, lifesteal: true, generated: true },
 ];
 const CMAP = Object.fromEntries(CARDS_S.map(c => [c.id, c]));
 
+// ── ユーティリティ ────────────────────────────────────────────────────────
 function shuffle(a) {
   const b = [...a];
   for (let i = b.length - 1; i > 0; i--) {
@@ -59,48 +60,190 @@ function createDeck(leaderId) {
   return shuffle(deck);
 }
 
-function createPlayer(leaderId) {
-  const deck = createDeck(leaderId);
-  return { hp: 15, hand: deck.splice(0, 4), deck, leaderId, pp: 3, attackPPSpent: 0, blockPP: 3, attackZone: [], blockZone: [], doubleNextAttack: false, rotiCardsPlayed: 0, popeyeHealTotal: 0, popeyeAwake: false };
-}
-
-const rooms = new Map();
-
-function genRoomId() {
-  const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let id = '';
-  for (let i = 0; i < 4; i++) id += c[Math.floor(Math.random() * c.length)];
-  return rooms.has(id) ? genRoomId() : id;
-}
-
 function drawCard(p) {
   if (p.deck.length > 0 && p.hand.length < 7) p.hand.push(p.deck.pop());
 }
 
-function applyHeal(p, amount, log) {
+function drawCards(p, n) {
+  for (let i = 0; i < n; i++) drawCard(p);
+}
+
+function applyHeal(gs, p, amount) {
   const prev = p.hp;
-  p.hp = Math.min(15,p.hp + amount);
+  p.hp = Math.min(15, p.hp + amount);
   const healed = p.hp - prev;
   if (healed > 0) {
-    log.push(`💚 HP+${healed}回復（${p.hp}/20）`);
+    addLog(gs, `💚 HP+${healed}回復（${p.hp}/15）`);
     if (p.leaderId === 'popeye' && !p.popeyeAwake) {
       p.popeyeHealTotal += healed;
-      if (p.popeyeHealTotal >= 15) { p.popeyeAwake = true; log.push(`⭐ スーパーポパイ覚醒！`); }
+      if (p.popeyeHealTotal >= 15) {
+        p.popeyeAwake = true;
+        addLog(gs, `⭐ スーパーポパイ覚醒！全アタックにLS！`);
+      }
     }
   }
 }
 
-function onLeaderCard(actor, target, log) {
+function calcLifeStealHeal(actor, actualDamage) {
+  if (actualDamage <= 0) return 0;
+  const rawTotal = actor.attackZone.reduce((s, id) => s + (CMAP[id]?.atk || 0), 0);
+  if (rawTotal <= 0) return 0;
+  if (actor.leaderId === 'popeye' && actor.popeyeAwake) return actualDamage;
+  const rawLS = actor.attackZone.filter(id => CMAP[id]?.lifesteal).reduce((s, id) => s + (CMAP[id]?.atk || 0), 0);
+  if (rawLS <= 0) return 0;
+  return Math.floor(actualDamage * rawLS / rawTotal);
+}
+
+function addLog(gs, msg) {
+  gs.log.unshift(msg);
+  if (gs.log.length > 20) gs.log.pop();
+}
+
+function leaderOnCard(gs, actor, opponent) {
   if (actor.leaderId === 'roti') {
     actor.rotiCardsPlayed++;
     if (actor.rotiCardsPlayed % 3 === 0) {
-      target.hp = Math.max(0, target.hp - 3);
-      log.push(`🦊 ろてぃ効果：3ダメージ！`);
+      opponent.hp = Math.max(0, opponent.hp - 3);
+      addLog(gs, `🦊 ろてぃ効果：3ダメ！（${opponent.hp}/15）`);
+      checkWin(gs);
     }
   }
 }
 
-// HTTP サーバー
+function checkWin(gs) {
+  if (gs.players.p1.hp <= 0 && gs.players.p2.hp <= 0) gs.winner = 'draw';
+  else if (gs.players.p2.hp <= 0) gs.winner = 'p1';
+  else if (gs.players.p1.hp <= 0) gs.winner = 'p2';
+}
+
+// ── ゲーム作成 ──────────────────────────────────────────────────────────────
+function createPlayerState(leaderId) {
+  const deck = createDeck(leaderId);
+  return { hp: 15, hand: deck.splice(0, 4), deck, leaderId, pp: 3, attackPPSpent: 0, blockPP: 3, attackZone: [], blockZone: [], doubleNextAttack: false, rotiCardsPlayed: 0, popeyeHealTotal: 0, popeyeAwake: false };
+}
+
+function createGame(p1Leader, p2Leader) {
+  const gs = {
+    players: { p1: createPlayerState(p1Leader), p2: createPlayerState(p2Leader) },
+    phase: 'p1_attack', round: 1, log: [], winner: null,
+  };
+  drawCard(gs.players.p1);
+  addLog(gs, `🃏 ゲーム開始！P1のアタックフェーズ`);
+  return gs;
+}
+
+// ── ゲームアクション ─────────────────────────────────────────────────────────
+function applySupport(gs, actor, c) {
+  const eff = c.effect;
+  if (!eff) return;
+  switch (eff.type) {
+    case 'heal':       applyHeal(gs, actor, eff.value); break;
+    case 'draw':       drawCards(actor, eff.value); break;
+    case 'pp':         actor.pp = Math.min(3, actor.pp + eff.value); addLog(gs, `💎 PP+${eff.value}`); break;
+    case 'double_atk': actor.doubleNextAttack = true; addLog(gs, `⬆️ 次アタック2倍！`); break;
+    case 'add_foxfire':
+      for (let i = 0; i < eff.value; i++) actor.hand.push('foxfire');
+      addLog(gs, `🦊 フォックスファイア×${eff.value}追加`); break;
+  }
+}
+
+function actionPlayAttack(gs, actorId, cardId) {
+  const oppId = actorId === 'p1' ? 'p2' : 'p1';
+  const actor = gs.players[actorId], opp = gs.players[oppId];
+  const c = CMAP[cardId];
+  if (!c) return 'invalid card';
+  if (!actor.hand.includes(cardId)) return 'not in hand';
+  if (c.type === 'block') return 'block card in attack phase';
+  if (actor.pp < c.cost) return 'not enough PP';
+  actor.pp -= c.cost; actor.attackPPSpent += c.cost;
+  actor.hand.splice(actor.hand.indexOf(cardId), 1);
+  if (c.type === 'attack') { actor.attackZone.push(cardId); addLog(gs, `⚔️ ${cardId}（ATK ${c.atk}）を出した`); }
+  else { addLog(gs, `✨ ${cardId}を発動`); applySupport(gs, actor, c); }
+  leaderOnCard(gs, actor, opp);
+  checkWin(gs);
+  return null;
+}
+
+function actionPlayBlock(gs, actorId, cardId) {
+  const oppId = actorId === 'p1' ? 'p2' : 'p1';
+  const actor = gs.players[actorId], opp = gs.players[oppId];
+  const c = CMAP[cardId];
+  if (!c || c.type !== 'block') return 'not a block card';
+  if (!actor.hand.includes(cardId)) return 'not in hand';
+  if (actor.blockPP < c.cost) return 'not enough block PP';
+  actor.blockPP -= c.cost;
+  actor.hand.splice(actor.hand.indexOf(cardId), 1);
+  actor.blockZone.push(cardId);
+  addLog(gs, `🛡 ${cardId}（BLK ${c.block}）でブロック`);
+  if (c.effect?.type === 'draw') drawCards(actor, c.effect.value);
+  if (c.effect?.type === 'heal') applyHeal(gs, actor, c.effect.value);
+  leaderOnCard(gs, actor, opp);
+  return null;
+}
+
+function actionEndAttack(gs, actorId) {
+  const actor = gs.players[actorId];
+  actor.blockPP = 3 - actor.attackPPSpent;
+  if (gs.phase === 'p1_attack') { gs.phase = 'p2_block'; addLog(gs, `📊 P1アタック終了 → P2ブロックフェーズ`); }
+  else if (gs.phase === 'p2_attack') { gs.phase = 'p1_block'; addLog(gs, `📊 P2アタック終了 → P1ブロックフェーズ`); }
+  return null;
+}
+
+function actionEndBlock(gs, blockerId) {
+  const attackerId = blockerId === 'p1' ? 'p2' : 'p1';
+  const blocker = gs.players[blockerId], attacker = gs.players[attackerId];
+  const rawTotal = attacker.attackZone.reduce((s, id) => s + (CMAP[id]?.atk || 0), 0);
+  const totalAtk = attacker.doubleNextAttack ? rawTotal * 2 : rawTotal;
+  const totalBlk = blocker.blockZone.reduce((s, id) => s + (CMAP[id]?.block || 0), 0);
+  const damage = Math.max(0, totalAtk - totalBlk);
+  addLog(gs, `⚡ ATK${totalAtk} vs BLK${totalBlk} → DMG${damage}`);
+  if (damage > 0) {
+    blocker.hp = Math.max(0, blocker.hp - damage);
+    addLog(gs, `💥 ${damage}ダメ！（${blocker.hp}/15）`);
+    const lsHeal = calcLifeStealHeal(attacker, damage);
+    if (lsHeal > 0) applyHeal(gs, attacker, lsHeal);
+  }
+  const counterDmg = blocker.blockZone.reduce((s, id) => s + (CMAP[id]?.counter || 0), 0);
+  if (damage === 0 && counterDmg > 0) { attacker.hp = Math.max(0, attacker.hp - counterDmg); addLog(gs, `🌿 反撃${counterDmg}ダメ！`); }
+  if (blocker.leaderId === 'autumn' && damage === 0) { attacker.hp = Math.max(0, attacker.hp - 1); addLog(gs, `🍂 おーたむ反撃1ダメ！`); }
+  attacker.attackZone = []; blocker.blockZone = []; attacker.doubleNextAttack = false;
+  checkWin(gs);
+  if (gs.winner) return null;
+  if (gs.phase === 'p2_block') {
+    drawCard(gs.players.p2); gs.players.p2.pp = 3; gs.players.p2.attackPPSpent = 0;
+    gs.phase = 'p2_attack';
+    addLog(gs, `─── P2アタックフェーズ ───`);
+  } else if (gs.phase === 'p1_block') {
+    gs.round++; drawCard(gs.players.p1); gs.players.p1.pp = 3; gs.players.p1.attackPPSpent = 0;
+    gs.phase = 'p1_attack';
+    addLog(gs, `─── Round ${gs.round} P1アタックフェーズ ───`);
+  }
+  return null;
+}
+
+// ── クライアント向けState構築 ────────────────────────────────────────────────
+function buildState(gs, myId) {
+  const oppId = myId === 'p1' ? 'p2' : 'p1';
+  const me = gs.players[myId], opp = gs.players[oppId];
+  const myPhases   = { p1: ['p1_attack', 'p1_block'], p2: ['p2_attack', 'p2_block'] };
+  const isMyTurn   = myPhases[myId]?.includes(gs.phase) ?? false;
+  const isAttacking = gs.phase === `${myId}_attack`;
+  const isBlocking  = gs.phase === `${myId}_block`;
+  return {
+    myHp: me.hp, myHand: me.hand, myLeader: me.leaderId,
+    myPP: me.pp, myBlockPP: me.blockPP,
+    myAttackZone: me.attackZone, myBlockZone: me.blockZone,
+    myPopeyeAwake: me.popeyeAwake,
+    opHp: opp.hp, opHandCount: opp.hand.length, opLeader: opp.leaderId,
+    opAttackZone: opp.attackZone, opBlockZone: opp.blockZone,
+    opPopeyeAwake: opp.popeyeAwake,
+    phase: gs.phase, isMyTurn, isAttacking, isBlocking,
+    round: gs.round, log: [...gs.log],
+    winner: gs.winner ? (gs.winner === myId ? 'me' : gs.winner === 'draw' ? 'draw' : 'opponent') : null,
+  };
+}
+
+// ── HTTP サーバー ──────────────────────────────────────────────────────────
 const server = http.createServer((req, res) => {
   let urlPath;
   try { urlPath = decodeURIComponent(req.url === '/' ? '/index.html' : req.url); }
@@ -114,81 +257,90 @@ const server = http.createServer((req, res) => {
   });
 });
 
-// WebSocket サーバー
+// ── WebSocket ────────────────────────────────────────────────────────────────
 const wss = new WebSocketServer({ server });
+const rooms = new Map();
+
+function genRoomId() {
+  const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let id = '';
+  for (let i = 0; i < 4; i++) id += c[Math.floor(Math.random() * c.length)];
+  return rooms.has(id) ? genRoomId() : id;
+}
+
+function send(ws, obj) { if (ws.readyState === 1) ws.send(JSON.stringify(obj)); }
+
+function bcast(room, fn) {
+  room.players.forEach((ws, i) => {
+    const myId = room.playerIds[i];
+    send(ws, fn(myId));
+  });
+}
 
 wss.on('connection', (ws) => {
   ws.roomId = null; ws.playerId = null;
-
-  ws.on('message', raw => {
-    try { handle(ws, JSON.parse(raw)); } catch(e) { console.error(e); }
-  });
-
+  ws.on('message', raw => { try { handle(ws, JSON.parse(raw)); } catch(e) { console.error(e); } });
   ws.on('close', () => {
     const room = rooms.get(ws.roomId);
     if (!room) return;
-    room.players.forEach(p => { if (p !== ws && p.readyState === 1) p.send(JSON.stringify({ type: 'opponent_disconnected' })); });
+    room.players.forEach(p => { if (p !== ws) send(p, { type: 'opponent_disconnected' }); });
     rooms.delete(ws.roomId);
   });
 });
 
-function send(ws, obj)   { ws.send(JSON.stringify(obj)); }
-function bcast(room, fn) { room.players.forEach((p, i) => send(p, fn(room.playerIds[i], room.playerIds[1-i]))); }
-
-function clientState(gs, myId, oppId) {
-  const me = gs.players[myId], opp = gs.players[oppId];
-  return {
-    myHp: me.hp, myHand: me.hand, myStatus: { awake: me.popeyeAwake },
-    myPP: me.pp, myBlockPP: me.blockPP,
-    myAttackZone: me.attackZone, myBlockZone: me.blockZone,
-    opHp: opp.hp, opHandCount: opp.hand.length,
-    opAttackZone: opp.attackZone, opBlockZone: opp.blockZone,
-    opStatus: { awake: opp.popeyeAwake },
-    phase: gs.phase, round: gs.round, log: [...gs.log], winner: gs.winner,
-    myLeader: me.leaderId, opLeader: opp.leaderId,
-    isMyTurn: gs.phase === 'p1_attack' && myId === gs.p1 || gs.phase === 'p1_block' && myId === gs.p1 ||
-              gs.phase === 'p2_attack' && myId === gs.p2 || gs.phase === 'p2_block' && myId === gs.p2,
-  };
-}
-
 function handle(ws, msg) {
   switch (msg.type) {
+
     case 'create_room': {
-      const rid = genRoomId();
-      ws.playerId = 'p1'; ws.roomId = rid;
-      rooms.set(rid, { id: rid, players: [ws], playerIds: ['p1'], gs: null, p1Leader: msg.leaderId });
-      send(ws, { type: 'room_created', roomId: rid });
+      const roomId = genRoomId();
+      ws.playerId = 'p1'; ws.roomId = roomId;
+      rooms.set(roomId, { id: roomId, players: [ws], playerIds: ['p1'], gs: null, leaders: {} });
+      send(ws, { type: 'room_created', roomId });
       break;
     }
+
     case 'join_room': {
       const room = rooms.get(msg.roomId?.toUpperCase());
       if (!room) return send(ws, { type: 'error', message: 'ルームが見つかりません' });
       if (room.players.length >= 2) return send(ws, { type: 'error', message: '満員です' });
       ws.playerId = 'p2'; ws.roomId = room.id;
       room.players.push(ws); room.playerIds.push('p2');
-      const gs = {
-        players: { p1: createPlayer(room.p1Leader), p2: createPlayer(msg.leaderId) },
-        phase: 'p1_attack', round: 1, p1: 'p1', p2: 'p2', log: [], winner: null,
-      };
-      drawCard(gs.players.p1); gs.players.p1.pp = 3;
-      room.gs = gs;
-      bcast(room, (myId, oppId) => ({ type: 'game_start', state: clientState(gs, myId, oppId) }));
+      // 両者にリーダー選択を促す
+      room.players.forEach(p => send(p, { type: 'select_leader' }));
       break;
     }
-    case 'play_card':
+
+    case 'choose_leader': {
+      const room = rooms.get(ws.roomId);
+      if (!room) return;
+      room.leaders[ws.playerId] = msg.leaderId;
+      send(ws, { type: 'leader_chosen', leaderId: msg.leaderId });
+      // 両者が選んだらゲーム開始
+      if (room.leaders.p1 && room.leaders.p2) {
+        room.gs = createGame(room.leaders.p1, room.leaders.p2);
+        bcast(room, myId => ({ type: 'game_start', state: buildState(room.gs, myId), playerId: myId }));
+      }
+      break;
+    }
+
+    case 'play_attack_card':
+    case 'play_block_card':
     case 'end_attack':
-    case 'play_block':
     case 'end_block': {
       const room = rooms.get(ws.roomId);
-      if (!room?.gs) return;
-      // Online game logic would go here (mirrors game.js logic)
-      // For brevity, broadcast state after action
-      bcast(room, (myId, oppId) => ({ type: 'game_update', state: clientState(room.gs, myId, oppId) }));
+      if (!room?.gs || room.gs.winner) return;
+      const gs = room.gs;
+      let err = null;
+      if (msg.type === 'play_attack_card') err = actionPlayAttack(gs, ws.playerId, msg.cardId);
+      if (msg.type === 'play_block_card')  err = actionPlayBlock(gs,  ws.playerId, msg.cardId);
+      if (msg.type === 'end_attack')       err = actionEndAttack(gs,  ws.playerId);
+      if (msg.type === 'end_block')        err = actionEndBlock(gs,   ws.playerId);
+      if (err) return send(ws, { type: 'error', message: err });
+      bcast(room, myId => ({ type: 'game_update', state: buildState(gs, myId) }));
+      if (gs.winner) bcast(room, myId => ({ type: 'game_over', isWinner: buildState(gs, myId).winner === 'me' }));
       break;
     }
   }
 }
 
-server.listen(PORT, () => {
-  console.log(`🃏 GFS CARD GAME: http://localhost:${PORT}`);
-});
+server.listen(PORT, () => console.log(`🃏 GFS CARD GAME: http://localhost:${PORT}`));

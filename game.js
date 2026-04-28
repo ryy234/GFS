@@ -203,7 +203,7 @@ const G = {
     return true;
   },
 
-  _applySupport(actor, target, c) {
+  _applySupport(actor, _target, c) {
     const eff = c.effect;
     if (!eff) return;
     switch (eff.type) {
@@ -233,7 +233,7 @@ const G = {
     actor.hp = Math.min(15,actor.hp + amount);
     const healed = actor.hp - prev;
     if (healed > 0) {
-      this.addLog(`💚 HP+${healed}回復（${actor.hp}/20）`);
+      this.addLog(`💚 HP+${healed}回復（${actor.hp}/15）`);
       // スーパーポパイ覚醒チェック
       if (actor.leaderId === 'popeye' && !actor.popeyeAwake) {
         actor.popeyeHealTotal += healed;
@@ -257,13 +257,13 @@ const G = {
   },
 
   // ── リーダー効果：カードプレイ時 ──
-  _leaderOnCard(actor, cardId) {
+  _leaderOnCard(actor) {
     const opponent = actor === this.player ? this.cpu : this.player;
     if (actor.leaderId === 'roti') {
       actor.rotiCardsPlayed++;
       if (actor.rotiCardsPlayed % 3 === 0) {
         opponent.hp = Math.max(0, opponent.hp - 3);
-        this.addLog(`🦊 ろてぃリーダー効果：相手に3ダメージ！（${opponent.hp}/20）`);
+        this.addLog(`🦊 ろてぃリーダー効果：相手に3ダメージ！（${opponent.hp}/15）`);
         this._checkWin();
       }
     }
@@ -321,14 +321,12 @@ const G = {
 
     this.addLog(`⚡ アタック${totalAtk} vs ブロック${totalBlk} → ダメージ${damage}`);
 
-    // ライフスティール判定
-    const hasLifesteal = this._hasLifesteal(attacker);
     if (damage > 0) {
       defender.hp = Math.max(0, defender.hp - damage);
-      this.addLog(`💥 ${damage}ダメージ！（${defender.hp}/20）`);
-      if (hasLifesteal) {
-        this._applyHeal(attacker, damage);
-      }
+      this.addLog(`💥 ${damage}ダメージ！（${defender.hp}/15）`);
+      // LSカードの割合分だけ回復（全カードLS扱いにならないよう修正）
+      const lsHeal = this._calcLifeStealHeal(attacker, damage);
+      if (lsHeal > 0) this._applyHeal(attacker, lsHeal);
     }
 
     // カウンター判定（ブロックゾーンにcounterがある場合）
@@ -380,9 +378,18 @@ const G = {
     return actor.blockZone.reduce((s, id) => s + (CARD_MAP[id]?.block || 0), 0);
   },
 
-  _hasLifesteal(actor) {
-    if (actor.leaderId === 'popeye' && actor.popeyeAwake) return true;
-    return actor.attackZone.some(id => CARD_MAP[id]?.lifesteal);
+  // ライフスティールカードの割合だけ回復量を計算
+  _calcLifeStealHeal(actor, actualDamage) {
+    if (actualDamage <= 0) return 0;
+    const rawTotal = actor.attackZone.reduce((s, id) => s + (CARD_MAP[id]?.atk || 0), 0);
+    if (rawTotal <= 0) return 0;
+    // ポパイ覚醒時は全カードがLS扱い
+    if (actor.leaderId === 'popeye' && actor.popeyeAwake) return actualDamage;
+    const rawLS = actor.attackZone
+      .filter(id => CARD_MAP[id]?.lifesteal)
+      .reduce((s, id) => s + (CARD_MAP[id]?.atk || 0), 0);
+    if (rawLS <= 0) return 0;
+    return Math.floor(actualDamage * rawLS / rawTotal);
   },
 
   // ── CPUアタック（自動） ──
@@ -540,7 +547,7 @@ const UI = {
     logEl.innerHTML = G.log.map(l => `<div class="log-line">${l}</div>`).join('');
   },
 
-  _renderHp(who, hp, leaderId) {
+  _renderHp(who, hp) {
     const pct = Math.max(0, (hp / 15) * 100);
     const bar = document.getElementById(`${who}-hp-bar`);
     const txt = document.getElementById(`${who}-hp-text`);
@@ -666,6 +673,177 @@ const UI = {
       : isWin === null ? 'お互いに全力を出し切った！' : 'またチャレンジしよう！';
     this.show('result');
   },
+};
+
+// ── オンラインマネージャー ────────────────────────────────────────────────
+const Online = {
+  ws: null,
+  roomId: null,
+  playerId: null,
+  pendingLeader: null,
+
+  connect(onOpen) {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    this.ws = new WebSocket(`${proto}//${location.host}`);
+    this.ws.onopen    = onOpen;
+    this.ws.onmessage = e => this._onMsg(JSON.parse(e.data));
+    this.ws.onclose   = () => {
+      document.getElementById('online-status').textContent = '⚠️ 切断されました';
+    };
+  },
+
+  send(obj) { if (this.ws?.readyState === 1) this.ws.send(JSON.stringify(obj)); },
+
+  createRoom() {
+    this.connect(() => this.send({ type: 'create_room' }));
+  },
+
+  joinRoom(code) {
+    this.connect(() => this.send({ type: 'join_room', roomId: code }));
+  },
+
+  chooseLeader(leaderId) {
+    this.pendingLeader = leaderId;
+    this.send({ type: 'choose_leader', leaderId });
+    document.getElementById('online-status').textContent = '⏳ 相手のリーダー選択を待っています...';
+  },
+
+  _onMsg(msg) {
+    switch (msg.type) {
+      case 'room_created':
+        this.roomId = msg.roomId;
+        document.getElementById('online-room-code').textContent = msg.roomId;
+        document.getElementById('online-status').textContent = '⏳ 相手の参加を待っています...';
+        UI.show('online-wait');
+        break;
+
+      case 'select_leader':
+        document.getElementById('online-status').textContent = 'リーダーを選択してください';
+        UI.show('online-leader');
+        break;
+
+      case 'leader_chosen':
+        document.getElementById('online-status').textContent = '⏳ 相手のリーダー選択を待っています...';
+        break;
+
+      case 'game_start':
+        this.playerId = msg.playerId;
+        UI.show('game');
+        this._render(msg.state);
+        break;
+
+      case 'game_update':
+        this._render(msg.state);
+        break;
+
+      case 'game_over':
+        UI.showResult(msg.isWinner);
+        break;
+
+      case 'opponent_disconnected':
+        alert('相手が切断しました');
+        UI.show('menu');
+        break;
+
+      case 'error':
+        document.getElementById('online-status').textContent = `❌ ${msg.message}`;
+        break;
+    }
+  },
+
+  _render(state) {
+    // HPバー
+    UI._renderHp('player', state.myHp);
+    UI._renderHp('cpu',    state.opHp);
+
+    // リーダー
+    UI._renderLeaderCard('player-leader', state.myLeader, state.myPopeyeAwake);
+    UI._renderLeaderCard('cpu-leader',    state.opLeader, state.opPopeyeAwake);
+
+    // PP
+    const ppVal = state.isAttacking ? state.myPP : state.isBlocking ? state.myBlockPP : 0;
+    UI._renderPP('player-pp', ppVal, state.isBlocking ? 'ブロックPP' : 'PP');
+    UI._renderPP('cpu-pp', 0, 'CPU PP');
+
+    // フェーズ
+    const phaseLabel = {
+      p1_attack: state.playerId === 'p1' ? '⚔️ あなたのアタック' : '🤖 相手のアタック中...',
+      p2_block:  state.playerId === 'p2' ? '🛡 あなたのブロック' : '⏳ 相手ブロック中...',
+      p2_attack: state.playerId === 'p2' ? '⚔️ あなたのアタック' : '🤖 相手のアタック中...',
+      p1_block:  state.playerId === 'p1' ? '🛡 あなたのブロック' : '⏳ 相手ブロック中...',
+    };
+    document.getElementById('phase-display').textContent = phaseLabel[state.phase] || state.phase;
+    document.getElementById('round-display').textContent = `Round ${state.round}`;
+
+    const plbl = document.getElementById('player-zone-label');
+    const clbl = document.getElementById('cpu-zone-label');
+    if (plbl) plbl.textContent = state.isAttacking ? '⚔️ あなたのアタックゾーン' : state.isBlocking ? '🛡 あなたのブロックゾーン' : '🃏 プレイゾーン';
+    if (clbl) clbl.textContent = (!state.isMyTurn) ? '⚔️/🛡 相手のプレイゾーン' : '🃏 相手プレイゾーン';
+
+    // ゾーン
+    UI._renderZone('player-play-zone', [...state.myAttackZone, ...state.myBlockZone]);
+    UI._renderZone('cpu-play-zone',    [...state.opAttackZone, ...state.opBlockZone]);
+
+    // 手札
+    const handEl = document.getElementById('player-hand');
+    handEl.innerHTML = '';
+    state.myHand.forEach(cardId => {
+      const card = CARD_MAP[cardId];
+      if (!card) return;
+      const cost = card.cost;
+      const canPlay = state.isMyTurn &&
+        ((state.isAttacking && card.type !== 'block' && state.myPP >= cost) ||
+         (state.isBlocking  && card.type === 'block' && state.myBlockPP >= cost));
+      const el = UI._makeCard(card, cost, canPlay);
+      if (canPlay) {
+        el.onclick = () => {
+          if (state.isAttacking) Online.send({ type: 'play_attack_card', cardId });
+          if (state.isBlocking)  Online.send({ type: 'play_block_card',  cardId });
+        };
+      }
+      handEl.appendChild(el);
+    });
+
+    // 相手手札（裏向き）
+    const cpuHandEl = document.getElementById('cpu-hand-online');
+    if (cpuHandEl) {
+      cpuHandEl.innerHTML = '';
+      for (let i = 0; i < state.opHandCount; i++) {
+        cpuHandEl.innerHTML += '<div class="card disabled" style="--card-color:#555;background:#1a1a2e;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:#475569;">GFS</div>';
+      }
+    }
+
+    // ボタン
+    document.getElementById('btn-end-attack').disabled = !(state.isMyTurn && state.isAttacking);
+    document.getElementById('btn-end-block').disabled  = !(state.isMyTurn && state.isBlocking);
+    document.getElementById('btn-end-attack').onclick = () => Online.send({ type: 'end_attack' });
+    document.getElementById('btn-end-block').onclick  = () => Online.send({ type: 'end_block' });
+
+    // ログ
+    document.getElementById('battle-log').innerHTML = state.log.map(l => `<div class="log-line">${l}</div>`).join('');
+  },
+};
+
+// UI._bindEvents に追加するオンライン部分
+const _origInit = UI.init.bind(UI);
+UI.init = function() {
+  _origInit();
+  // オンラインボタン
+  const btnOnline = document.getElementById('btn-online');
+  if (btnOnline) {
+    btnOnline.disabled = false;
+    btnOnline.onclick = () => UI.show('online-setup');
+  }
+  document.getElementById('btn-create-room')?.addEventListener('click', () => Online.createRoom());
+  document.getElementById('btn-join-room')?.addEventListener('click', () => {
+    const code = document.getElementById('room-code-input')?.value?.trim()?.toUpperCase();
+    if (code?.length === 4) Online.joinRoom(code);
+    else document.getElementById('online-status').textContent = '❌ 4文字のコードを入力してください';
+  });
+  document.getElementById('btn-back-online')?.addEventListener('click', () => UI.show('menu'));
+  document.querySelectorAll('.online-leader-option').forEach(el => {
+    el.onclick = () => Online.chooseLeader(el.dataset.leader);
+  });
 };
 
 window.addEventListener('DOMContentLoaded', () => UI.init());

@@ -17,18 +17,69 @@
     <div style="font-size:1.1rem;color:#94a3b8;margin-bottom:4px;">モードを選択</div>
     <div class="menu-buttons">
       <button id="btn-vs-cpu" class="btn btn-primary">🤖 vs CPU</button>
-      <button class="btn btn-gold" disabled title="準備中">🌐 オンライン対戦（準備中）</button>
+      <button id="btn-online" class="btn btn-gold">🌐 オンライン対戦</button>
     </div>
 
     <div style="background:#13132a;border:1px solid #2d2d5a;border-radius:12px;padding:16px;width:100%;max-width:560px;">
       <div style="font-weight:700;color:#f59e0b;margin-bottom:10px;font-size:.9rem;">📖 ゲームルール</div>
       <div style="font-size:.78rem;color:#cbd5e1;line-height:1.7;display:grid;gap:6px;">
-        <div>• HP 20からスタート。相手のHPを0にしたら勝利</div>
+        <div>• HP 15からスタート。相手のHPを0にしたら勝利</div>
         <div>• PP（プレイポイント）は毎ターン3まで回復。カードのコスト分消費</div>
         <div>• <span style="color:#e74c3c">⚔️アタック</span>フェーズでアタックカードを出し、合計値で攻撃</div>
         <div>• <span style="color:#3498db">🛡ブロック</span>フェーズでブロックカードを出し、ダメージを軽減</div>
         <div>• アタックに使ったPPだけブロックPPが減る！攻防の読み合い</div>
         <div>• <span style="color:#f59e0b">ライフスティール</span>：与えたダメージ分だけHP回復</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── オンラインセットアップ ── -->
+  <div id="screen-online-setup" class="screen hidden">
+    <button id="btn-back-online" class="btn btn-secondary btn-sm">← 戻る</button>
+    <div id="online-status" style="font-size:.9rem;color:#94a3b8;min-height:1.4em;"></div>
+    <div style="display:flex;flex-direction:column;gap:14px;width:300px;">
+      <div style="background:#13132a;border:1px solid #2d2d5a;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px;">
+        <div style="font-weight:700;color:#f59e0b;">ルームを作成</div>
+        <button id="btn-create-room" class="btn btn-primary">新しいルームを作成</button>
+      </div>
+      <div style="background:#13132a;border:1px solid #2d2d5a;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px;">
+        <div style="font-weight:700;color:#f59e0b;">ルームに参加</div>
+        <div style="display:flex;gap:8px;">
+          <input id="room-code-input" type="text" maxlength="4" placeholder="XXXX"
+            style="flex:1;background:#1a1a35;border:1px solid #2d2d5a;border-radius:6px;color:#e2e8f0;padding:8px 12px;font-size:1rem;letter-spacing:3px;text-transform:uppercase;">
+          <button id="btn-join-room" class="btn btn-gold btn-sm">参加</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 待機画面（ルーム作成後） ── -->
+  <div id="screen-online-wait" class="screen hidden">
+    <div style="background:#13132a;border:2px solid #7c3aed;border-radius:16px;padding:36px;text-align:center;display:flex;flex-direction:column;gap:16px;align-items:center;">
+      <div style="font-size:.9rem;color:#94a3b8;">フレンドにルームコードを伝えてね</div>
+      <div id="online-room-code" style="font-size:2.8rem;font-weight:900;letter-spacing:10px;color:#f59e0b;">----</div>
+      <div id="online-status" style="font-size:.85rem;color:#94a3b8;">⏳ 相手の参加を待っています...</div>
+    </div>
+  </div>
+
+  <!-- ── オンライン リーダー選択 ── -->
+  <div id="screen-online-leader" class="screen hidden">
+    <div id="online-status" style="font-size:.9rem;color:#f59e0b;font-weight:700;">リーダーを選択してください</div>
+    <div class="leader-grid">
+      <div class="online-leader-option leader-option" data-leader="roti">
+        <img src="card_icon/リーダーカード/%230704%20ろてぃ.png" alt="ろてぃ" onerror="this.style.background='#1a1a2e'">
+        <div class="lo-name">#0704 ろてぃ</div>
+        <div class="lo-effect">カードを3枚プレイするごとに相手に3ダメージ</div>
+      </div>
+      <div class="online-leader-option leader-option" data-leader="popeye">
+        <img src="card_icon/リーダーカード/星の観測者スーパーポパイ.png" alt="スーパーポパイ" onerror="this.style.background='#1a1a2e'">
+        <div class="lo-name">星の観測者<br>スーパーポパイ</div>
+        <div class="lo-effect">合計15回復で覚醒。全アタックにライフスティール</div>
+      </div>
+      <div class="online-leader-option leader-option" data-leader="autumn">
+        <img src="card_icon/リーダーカード/秋の魔法使い おーたむ.png" alt="おーたむ" onerror="this.style.background='#1a1a2e'">
+        <div class="lo-name">秋の魔法使い<br>おーたむ</div>
+        <div class="lo-effect">完全ブロック時、相手に1ダメージ</div>
       </div>
     </div>
   </div>
@@ -84,8 +135,11 @@
         <div class="hp-row">
           <div class="hp-bar-wrap"><div class="hp-bar" id="cpu-hp-bar" style="width:100%"></div></div>
           <span class="hp-text" id="cpu-hp-text">HP 15/15</span>
-          <span style="font-size:.7rem;color:#64748b;margin-left:4px;">CPU</span>
+          <span style="font-size:.7rem;color:#64748b;margin-left:4px;">CPU / 相手</span>
         </div>
+
+        <!-- 相手手札（オンライン時・裏向き） -->
+        <div id="cpu-hand-online" class="hand-area" style="min-height:40px;gap:6px;padding:4px;display:none;"></div>
 
         <!-- CPU プレイゾーン -->
         <div class="zone-wrap">
