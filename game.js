@@ -13,14 +13,14 @@ const LEADERS = [
     id: 'popeye',
     name: '星の観測者スーパーポパイ',
     image: 'card_icon/リーダーカード/星の観測者スーパーポパイ.png',
-    effect: 'カード効果で合計15回復したとき覚醒。全アタックにライフスティール獲得',
+    effect: 'カード効果で合計12回復したとき覚醒。全アタックにライフスティール獲得',
     exclusive: [],
   },
   {
     id: 'autumn',
     name: '秋の魔法使い おーたむ',
     image: 'card_icon/リーダーカード/秋の魔法使い おーたむ.png',
-    effect: 'ブロック成功（ダメージ0）時、相手に1ダメージ',
+    effect: 'ブロック成功（ダメージ0）時、相手に2ダメージ',
     exclusive: ['autumn_paradise'],
   },
 ];
@@ -45,14 +45,14 @@ const CARDS = [
   { id: 'hey_guys',      name: 'hey,guys!',                image: 'card_icon/hey,guys.webp',                               type: 'block',   cost: 1, block: 2, effect: { type: 'heal', value: 1 },         desc: 'ブロック 2　HP+1回復' },
   // Support
   { id: 'ton_tears',     name: 'とんの涙',                 image: 'card_icon/とんの涙.webp',                               type: 'support', cost: 1, effect: { type: 'heal', value: 2 },                   desc: 'HP 2回復' },
-  { id: 'album1',        name: 'GFSアルバム Vol.1',        image: 'card_icon/album_2025-04-29_02-41-49.gif',               type: 'support', cost: 2, effect: { type: 'heal', value: 4 },                   desc: 'HP 4回復' },
-  { id: 'album2',        name: 'GFSアルバム Vol.2',        image: 'card_icon/album_2025-05-18_02-53-31.gif',               type: 'support', cost: 3, effect: { type: 'double_atk' },                       desc: '次のターンのアタックを2倍' },
-  { id: 'mystery',       name: '謎のカード',               image: 'card_icon/ランプの魔人.webp',          type: 'support', cost: 1, effect: { type: 'draw', value: 2 },                   desc: 'カード2枚ドロー' },
+  { id: 'album1',        name: 'うさぎの涙',        image: 'card_icon/album_2025-04-29_02-41-49.gif',               type: 'support', cost: 2, effect: { type: 'heal', value: 4 },                   desc: 'HP 4回復' },
+  { id: 'album2',        name: 'コーヒーカップ',        image: 'card_icon/album_2025-05-18_02-53-31.gif',               type: 'support', cost: 3, effect: { type: 'double_atk' },                       desc: '次のターンのアタックを2倍' },
+  { id: 'mystery',       name: 'GFSの魔人',               image: 'card_icon/ランプの魔人.webp',          type: 'support', cost: 1, effect: { type: 'draw', value: 2 },                   desc: 'カード2枚ドロー' },
   { id: 'mari_tanuki',  name: 'マリのたぬき',              image: 'card_icon/マリのたぬき.jpg',             type: 'support', cost: 2, effect: { type: 'heal_draw', heal: 1, draw: 3 },         desc: 'カード3枚ドロー＋HP1回復' },
   // Leader Exclusive
   { id: 'darkin',        name: 'ダーキンの兆し',          image: 'card_icon/ダ―キンの兆し.png',                               type: 'support', cost: 2, exclusive: 'popeye', effect: { type: 'heal_draw', heal: 3, draw: 1 }, desc: 'HP 3回復＋カード1枚ドロー' },
-  { id: 'roti_foxfire',  name: 'フォックスファイア召喚',  image: 'card_icon/ろてぃのフォックスファイア.png',              type: 'support', cost: 1, exclusive: 'roti',    effect: { type: 'add_foxfire', value: 3 }, desc: 'フォックスファイア×3を手札に加える' },
-  { id: 'autumn_paradise', name: 'おーたむの茨の楽園',    image: 'card_icon/おーたむの茨の楽園.png',                      type: 'block',   cost: 2, block: 5, counter: 1, exclusive: 'autumn',              desc: 'ブロック 5　反撃1' },
+  { id: 'roti_foxfire',  name: 'ろてぃのフォックスファイア',  image: 'card_icon/ろてぃのフォックスファイア.png',              type: 'support', cost: 1, exclusive: 'roti',    effect: { type: 'add_foxfire', value: 3 }, desc: 'フォックスファイア×3を手札に加える' },
+  { id: 'autumn_paradise', name: 'おーたむ茨の楽園',    image: 'card_icon/おーたむの茨の楽園.png',                      type: 'block',   cost: 2, block: 5, counter: 1, exclusive: 'autumn',              desc: 'ブロック 5　反撃1' },
   // Generated (not in deck)
   { id: 'foxfire',       name: 'フォックスファイア',       image: 'card_icon/フォックスファイア.png',                                 type: 'attack',  cost: 0, atk: 1, lifesteal: true, generated: true,              desc: 'ATK 1　ライフスティール' },
 ];
@@ -108,6 +108,7 @@ function createPlayer(leaderId) {
     attackZone: [],
     blockZone: [],
     doubleNextAttack: false,
+    doublePending: false,
     // leader counters
     rotiCardsPlayed: 0,
     popeyeHealTotal: 0,
@@ -176,6 +177,7 @@ const G = {
     if (c.effect?.type === 'draw')  this._applyDraw(p, c.effect.value);
     if (c.effect?.type === 'heal')  this._applyHeal(p, c.effect.value);
     this._leaderOnCard(p, cardId);
+    if (c.exclusive) UI._showExclusiveAnimation(c);
     UI.render();
     return true;
   },
@@ -227,7 +229,7 @@ const G = {
         this.addLog(`💎 PP+${eff.value}`);
         break;
       case 'double_atk':
-        actor.doubleNextAttack = true;
+        actor.doublePending = true;
         this.addLog(`⬆️ 次ターンのアタック2倍！`);
         break;
       case 'add_foxfire':
@@ -250,7 +252,7 @@ const G = {
       // スーパーポパイ覚醒チェック
       if (actor.leaderId === 'popeye' && !actor.popeyeAwake) {
         actor.popeyeHealTotal += healed;
-        if (actor.popeyeHealTotal >= 13) {
+        if (actor.popeyeHealTotal >= 12) {
           actor.popeyeAwake = true;
           this.addLog(`⭐ スーパーポパイ覚醒！全アタックにライフスティール！`);
         }
@@ -351,16 +353,17 @@ const G = {
       this.addLog(`🌿 反撃${counterDmg}ダメージ！`);
     }
 
-    // おーたむリーダー効果
-    if (defender.leaderId === 'autumn' && damage === 0) {
-      attacker.hp = Math.max(0, attacker.hp - 1);
-      this.addLog(`🍂 おーたむリーダー効果：反撃1ダメージ！`);
+    // おーたむリーダー効果（ブロックカードを使用してダメージ0になった場合のみ）
+    if (defender.leaderId === 'autumn' && damage === 0 && totalBlk > 0) {
+      attacker.hp = Math.max(0, attacker.hp - 2);
+      this.addLog(`🍂 おーたむリーダー効果：反撃2ダメージ！`);
     }
 
     // ゾーンをクリア
     attacker.attackZone = [];
     defender.blockZone = [];
-    attacker.doubleNextAttack = false;
+    attacker.doubleNextAttack = attacker.doublePending;
+    attacker.doublePending = false;
 
     this._checkWin();
     if (this.winner) { UI.render(); return; }
@@ -404,7 +407,7 @@ const G = {
       .filter(id => CARD_MAP[id]?.lifesteal)
       .reduce((s, id) => s + (CARD_MAP[id]?.atk || 0), 0);
     if (rawLS <= 0) return 0;
-    return Math.floor(actualDamage * rawLS / rawTotal);
+    return Math.min(rawLS, actualDamage);
   },
 
   // ── CPUアタック（自動） ──
