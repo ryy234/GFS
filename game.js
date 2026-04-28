@@ -287,7 +287,7 @@ const G = {
   // ── アタック終了ボタン ──
   endAttack() {
     if (this.phase !== PHASE.P1_ATTACK) return;
-    this.player.blockPP = 3 - this.player.attackPPSpent;
+    this.player.blockPP = this.player.pp;
     this.phase = PHASE.P2_BLOCK;
     const totalAtk = this._calcTotalAtk(this.player);
     this.addLog(`📊 アタック合計: ${totalAtk}。CPUがブロック中...`);
@@ -444,7 +444,7 @@ const G = {
     // 残PPでサポート
     tryPlay(c => c.type === 'support');
 
-    cpu.blockPP = 3 - cpu.attackPPSpent;
+    cpu.blockPP = cpu.pp;
     this.phase = PHASE.P1_BLOCK;
     const totalAtk = this._calcTotalAtk(cpu);
     this.addLog(`📊 CPU アタック合計: ${totalAtk}。あなたのブロックフェーズ！`);
