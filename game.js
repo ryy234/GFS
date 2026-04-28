@@ -485,12 +485,15 @@ const UI = {
     document.getElementById('btn-end-block').onclick  = () => { G.endBlock(); };
     document.getElementById('btn-result-retry').onclick = () => this.show('leader');
     document.getElementById('btn-result-menu').onclick  = () => this.show('menu');
+    document.getElementById('btn-cardlist')?.addEventListener('click', () => this.showCardList());
+    document.getElementById('btn-cardlist-back')?.addEventListener('click', () => this.show('menu'));
+    document.getElementById('card-modal-close-btn')?.addEventListener('click', () => this.closeCardModal());
+    document.getElementById('card-modal-close-bg')?.addEventListener('click',  () => this.closeCardModal());
 
     // リーダー選択
     document.querySelectorAll('.leader-option').forEach(el => {
       el.onclick = () => {
         const leaderId = el.dataset.leader;
-        // CPU はランダム選択
         const others = LEADERS.filter(l => l.id !== leaderId);
         const cpuLeader = others[Math.floor(Math.random() * others.length)];
         G.startGame(leaderId, cpuLeader.id);
@@ -499,69 +502,117 @@ const UI = {
     });
   },
 
+  showCardList() {
+    const grid = document.getElementById('cardlist-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    CARDS.filter(c => !c.generated).forEach(card => {
+      const item = document.createElement('div');
+      item.className = 'cardlist-item';
+      item.innerHTML = `
+        <img src="${card.image}" alt="${card.name}" loading="lazy" onerror="this.parentNode.style.background='#1a1a2e'">
+        <div class="cardlist-item-name" style="color:${TYPE_COLOR[card.type] || '#aaa'}">${card.name}</div>
+      `;
+      item.onclick = () => this.showCardDetail(card);
+      grid.appendChild(item);
+    });
+    this.show('cardlist');
+  },
+
+  showCardDetail(card) {
+    const modal = document.getElementById('card-detail-modal');
+    const inner = document.getElementById('card-modal-inner');
+    if (!modal || !inner) return;
+    const statLine = card.type === 'attack'
+      ? `⚔️ ATK ${card.atk}`
+      : card.type === 'block'
+      ? `🛡 BLK ${card.block}${card.counter ? ' ／ 反撃' + card.counter : ''}`
+      : '✨ サポート';
+    const tags = [
+      card.lifesteal ? '🩸 ライフスティール' : '',
+      card.exclusive ? `🌟 専用カード（${LEADER_MAP[card.exclusive]?.name || card.exclusive}）` : '',
+    ].filter(Boolean).map(t => `<div class="cmd-badge">${t}</div>`).join('');
+    inner.innerHTML = `
+      <img src="${card.image}" alt="${card.name}" onerror="this.style.background='#1a1a2e'">
+      <div class="card-modal-info">
+        <div class="cmd-name">${card.name}</div>
+        <div class="cmd-type" style="color:${TYPE_COLOR[card.type] || '#aaa'}">${card.type.toUpperCase()}</div>
+        <div class="cmd-cost">コスト：${card.cost} 💎</div>
+        <div class="cmd-stat">${statLine}</div>
+        <div class="cmd-desc">${card.desc}</div>
+        ${tags}
+      </div>
+    `;
+    modal.classList.remove('hidden');
+  },
+
+  closeCardModal() {
+    document.getElementById('card-detail-modal')?.classList.add('hidden');
+  },
+
   render() {
-    const p = G.player;
-    const c = G.cpu;
+    const p = G.player, c = G.cpu;
     if (!p || !c) return;
 
     const phase = G.phase;
     const isAttackPhase = phase === PHASE.P1_ATTACK;
     const isBlockPhase  = phase === PHASE.P1_BLOCK;
+    const playerPP = isAttackPhase ? p.pp : isBlockPhase ? p.blockPP : 0;
 
-    // HP バー
-    this._renderHp('player', p.hp, p.leaderId);
-    this._renderHp('cpu', c.hp, c.leaderId);
+    // リーダーブロック（HP数値 + PP横並び）
+    this._renderLeaderBlock('player-leader-block', p.leaderId, p.popeyeAwake, p.hp, playerPP);
+    this._renderLeaderBlock('cpu-leader-block',    c.leaderId, c.popeyeAwake, c.hp, c.pp);
 
-    // リーダー画像（覚醒エフェクト）
-    this._renderLeaderCard('player-leader', p.leaderId, p.popeyeAwake);
-    this._renderLeaderCard('cpu-leader',    c.leaderId, c.popeyeAwake);
-
-    // PP 表示
-    this._renderPP('player-pp', isAttackPhase ? p.pp : (isBlockPhase ? p.blockPP : 0), isBlockPhase ? 'ブロックPP' : 'PP');
-    this._renderPP('cpu-pp', c.pp, 'CPU PP');
-
-    // フェーズ表示
+    // フェーズ
     const phaseText = {
-      [PHASE.P1_ATTACK]:  '⚔️ あなたのアタックフェーズ',
+      [PHASE.P1_ATTACK]:  '⚔️ あなたのアタック',
       [PHASE.P2_BLOCK]:   '🛡 CPU ブロック中...',
       [PHASE.RESOLVE_P1]: '⚡ ダメージ計算中...',
       [PHASE.P2_ATTACK]:  '🤖 CPU アタック中...',
-      [PHASE.P1_BLOCK]:   '🛡 あなたのブロックフェーズ',
+      [PHASE.P1_BLOCK]:   '🛡 あなたのブロック',
       [PHASE.RESOLVE_P2]: '⚡ ダメージ計算中...',
       [PHASE.GAME_OVER]:  '🏁 ゲーム終了',
     };
     document.getElementById('phase-display').textContent = phaseText[phase] || '';
     document.getElementById('round-display').textContent = `Round ${G.round}`;
 
-    // プレイゾーン（attack/block を統合して必ず全カードを表示）
-    const playerZoneLabel = isAttackPhase ? '⚔️ あなたのアタックゾーン' : isBlockPhase ? '🛡 あなたのブロックゾーン' : '🃏 あなたのプレイゾーン';
-    const cpuZoneLabel    = (phase === PHASE.P2_ATTACK) ? '⚔️ CPU アタックゾーン' : (phase === PHASE.P2_BLOCK) ? '🛡 CPU ブロックゾーン' : '🃏 CPU プレイゾーン';
+    // ゾーンラベル
     const plbl = document.getElementById('player-zone-label');
     const clbl = document.getElementById('cpu-zone-label');
-    if (plbl) plbl.textContent = playerZoneLabel;
-    if (clbl) clbl.textContent = cpuZoneLabel;
+    if (plbl) plbl.textContent = isAttackPhase ? '⚔️ あなたのアタックゾーン' : isBlockPhase ? '🛡 あなたのブロックゾーン' : '🃏 プレイゾーン';
+    if (clbl) clbl.textContent = (phase === PHASE.P2_ATTACK) ? '⚔️ CPU アタックゾーン' : (phase === PHASE.P2_BLOCK) ? '🛡 CPU ブロックゾーン' : '🃏 CPU プレイゾーン';
+
     this._renderZone('cpu-play-zone',    [...c.attackZone, ...c.blockZone]);
     this._renderZone('player-play-zone', [...p.attackZone, ...p.blockZone]);
-
-    // 手札
     this._renderHand(p, isAttackPhase, isBlockPhase);
 
-    // ボタン
     document.getElementById('btn-end-attack').disabled = !isAttackPhase;
     document.getElementById('btn-end-block').disabled  = !isBlockPhase;
 
-    // ログ
     const logEl = document.getElementById('battle-log');
     logEl.innerHTML = G.log.map(l => `<div class="log-line">${l}</div>`).join('');
   },
 
-  _renderHp(who, hp) {
-    const pct = Math.max(0, (hp / 15) * 100);
-    const bar = document.getElementById(`${who}-hp-bar`);
-    const txt = document.getElementById(`${who}-hp-text`);
-    bar.style.width = `${pct}%`;
-    bar.style.backgroundColor = pct > 50 ? '#27ae60' : pct > 25 ? '#f39c12' : '#e74c3c';
-    txt.textContent = `HP ${hp}/15`;
+  _renderLeaderBlock(elId, leaderId, awake, hp, pp) {
+    const el = document.getElementById(elId);
+    if (!el || !leaderId) return;
+    const leader = LEADER_MAP[leaderId];
+    const imgSrc = (leaderId === 'popeye' && awake)
+      ? 'card_icon/リーダーカード/星の観測者スーパーポパイ_覚醒状態.png'
+      : leader.image;
+    const hpColor = hp > 10 ? '#4ade80' : hp > 5 ? '#fbbf24' : '#f87171';
+    const dots = [0,1,2].map(i => `<span class="pp-dot ${i < pp ? 'filled' : ''}"></span>`).join('');
+    el.innerHTML = `
+      <div class="leader-block ${awake ? 'awake' : ''}">
+        <div class="leader-img-wrap">
+          <img src="${imgSrc}" alt="${leader.name}" onerror="this.parentNode.style.background='#1a1a2e'">
+          <div class="leader-hp-num" style="color:${hpColor}">❤️${hp}</div>
+          ${awake ? '<div class="awake-badge">覚醒</div>' : ''}
+        </div>
+        <div class="leader-name-sm">${leader.name}</div>
+        <div class="pp-row-h">${dots}</div>
+      </div>
+    `;
   },
 
   _renderLeaderCard(elId, leaderId, awake) {
@@ -763,18 +814,10 @@ const Online = {
   },
 
   _render(state) {
-    // HPバー
-    UI._renderHp('player', state.myHp);
-    UI._renderHp('cpu',    state.opHp);
-
-    // リーダー
-    UI._renderLeaderCard('player-leader', state.myLeader, state.myPopeyeAwake);
-    UI._renderLeaderCard('cpu-leader',    state.opLeader, state.opPopeyeAwake);
-
-    // PP
+    // リーダーブロック（HP + PP 統合）
     const ppVal = state.isAttacking ? state.myPP : state.isBlocking ? state.myBlockPP : 0;
-    UI._renderPP('player-pp', ppVal, state.isBlocking ? 'ブロックPP' : 'PP');
-    UI._renderPP('cpu-pp', 0, 'CPU PP');
+    UI._renderLeaderBlock('player-leader-block', state.myLeader, state.myPopeyeAwake, state.myHp, ppVal);
+    UI._renderLeaderBlock('cpu-leader-block',    state.opLeader, state.opPopeyeAwake, state.opHp, 0);
 
     // フェーズ
     const phaseLabel = {

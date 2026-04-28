@@ -18,6 +18,7 @@
     <div class="menu-buttons">
       <button id="btn-vs-cpu" class="btn btn-primary">🤖 vs CPU</button>
       <button id="btn-online" class="btn btn-gold">🌐 オンライン対戦</button>
+      <button id="btn-cardlist" class="btn btn-secondary">📋 カードリスト</button>
     </div>
 
     <div style="background:#13132a;border:1px solid #2d2d5a;border-radius:12px;padding:16px;width:100%;max-width:560px;">
@@ -109,80 +110,41 @@
 
   <!-- ── ゲーム画面 ── -->
   <div id="screen-game" class="screen hidden">
-    <div class="game-layout" style="width:100%;">
+    <div class="game-wrap">
 
-      <!-- 左：リーダーカード列 -->
+      <!-- 左：リーダー + ログ -->
       <div class="leaders-col">
-        <!-- CPU リーダー -->
-        <div class="leader-card-wrap">
-          <div id="cpu-leader"></div>
+        <div id="cpu-leader-block" class="leader-block-wrap"></div>
+        <div class="battle-log" id="battle-log">
+          <div class="log-line" style="color:#475569;">ゲーム開始を待っています...</div>
         </div>
-        <div id="cpu-pp" class="pp-row" style="flex-direction:column;gap:3px;"></div>
-
-        <div style="flex:1;"></div>
-
-        <!-- 自分のリーダー -->
-        <div id="player-pp" class="pp-row" style="flex-direction:column;gap:3px;"></div>
-        <div class="leader-card-wrap">
-          <div id="player-leader"></div>
-        </div>
+        <div id="player-leader-block" class="leader-block-wrap"></div>
       </div>
 
-      <!-- 右：メインコンテンツ -->
+      <!-- 右：ゾーン + コントロール + 手札 -->
       <div class="main-col">
+        <div class="zone-label" id="cpu-zone-label">🃏 CPU プレイゾーン</div>
+        <div class="zone" id="cpu-play-zone"><div class="zone-empty">—</div></div>
 
-        <!-- CPU HP -->
-        <div class="hp-row">
-          <div class="hp-bar-wrap"><div class="hp-bar" id="cpu-hp-bar" style="width:100%"></div></div>
-          <span class="hp-text" id="cpu-hp-text">HP 15/15</span>
-          <span style="font-size:.7rem;color:#64748b;margin-left:4px;">CPU / 相手</span>
-        </div>
-
-        <!-- 相手手札（オンライン時・裏向き） -->
-        <div id="cpu-hand-online" class="hand-area" style="min-height:40px;gap:6px;padding:4px;display:none;"></div>
-
-        <!-- CPU プレイゾーン -->
-        <div class="zone-wrap">
-          <div class="zone-label" id="cpu-zone-label">🃏 CPU プレイゾーン</div>
-          <div class="zone" id="cpu-play-zone"><div class="zone-empty">—</div></div>
-        </div>
-
-        <!-- 中央：ログ＋操作 -->
-        <div class="center-panel">
-          <div class="battle-log" id="battle-log">
-            <div class="log-line" style="color:#64748b;">ゲーム開始を待っています...</div>
+        <div class="controls-bar">
+          <div class="phase-info">
+            <div id="phase-display">準備中...</div>
+            <div id="round-display">Round 1</div>
           </div>
-          <div class="controls">
-            <div class="phase-box">
-              <div id="phase-display">準備中...</div>
-              <div id="round-display">Round 1</div>
-            </div>
+          <div class="ctrl-buttons">
             <button id="btn-end-attack" class="btn btn-danger btn-sm" disabled>アタック終了</button>
             <button id="btn-end-block"  class="btn btn-info  btn-sm" disabled>ブロック終了</button>
           </div>
         </div>
 
-        <!-- 自分プレイゾーン -->
-        <div class="zone-wrap">
-          <div class="zone-label" id="player-zone-label">🃏 あなたのプレイゾーン</div>
-          <div class="zone" id="player-play-zone"><div class="zone-empty">—</div></div>
-        </div>
+        <div class="zone-label" id="player-zone-label">🃏 あなたのプレイゾーン</div>
+        <div class="zone" id="player-play-zone"><div class="zone-empty">—</div></div>
 
-        <!-- 自分 HP -->
-        <div class="hp-row">
-          <span style="font-size:.7rem;color:#64748b;margin-right:4px;">あなた</span>
-          <div class="hp-bar-wrap"><div class="hp-bar" id="player-hp-bar" style="width:100%"></div></div>
-          <span class="hp-text" id="player-hp-text">HP 15/15</span>
-        </div>
+        <div class="hand-label">🃏 手札</div>
+        <div class="hand-area" id="player-hand"></div>
+      </div>
 
-        <!-- 手札 -->
-        <div class="hand-wrap">
-          <div class="hand-label">🃏 手札</div>
-          <div class="hand-area" id="player-hand"></div>
-        </div>
-
-      </div><!-- /main-col -->
-    </div><!-- /game-layout -->
+    </div>
   </div>
 
   <!-- ── リザルト ── -->
@@ -193,6 +155,24 @@
       <div class="result-buttons">
         <button id="btn-result-retry" class="btn btn-primary">リーダー選択へ</button>
         <button id="btn-result-menu"  class="btn btn-secondary">メニューへ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── カードリスト ── -->
+  <div id="screen-cardlist" class="screen hidden">
+    <div style="display:flex;align-items:center;gap:14px;width:100%;max-width:900px;">
+      <button id="btn-cardlist-back" class="btn btn-secondary btn-sm">← 戻る</button>
+      <span style="font-size:1.1rem;font-weight:700;color:#f59e0b;">カードリスト</span>
+    </div>
+    <div id="cardlist-grid" class="cardlist-grid"></div>
+
+    <!-- 拡大モーダル -->
+    <div id="card-detail-modal" class="card-modal hidden">
+      <div class="card-modal-overlay" id="card-modal-close-bg"></div>
+      <div class="card-modal-box">
+        <button class="card-modal-close-btn" id="card-modal-close-btn">✕</button>
+        <div class="card-modal-inner" id="card-modal-inner"></div>
       </div>
     </div>
   </div>
