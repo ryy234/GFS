@@ -59,7 +59,7 @@ const CARDS = [
 
 const CARD_MAP  = Object.fromEntries(CARDS.map(c => [c.id, c]));
 const LEADER_MAP = Object.fromEntries(LEADERS.map(l => [l.id, l]));
-const TYPE_COLOR = { attack: '#e74c3c', block: '#3498db', support: '#27ae60' };
+const TYPE_COLOR = { attack: '#e74c3c', block: '#3498db', support: '#eab308' };
 
 // ── フェーズ定数 ──────────────────────────────────────────────────────────
 const PHASE = {
@@ -898,13 +898,7 @@ const Online = {
     });
 
     // 相手手札（裏向き）
-    const cpuHandEl = document.getElementById('cpu-hand-online');
-    if (cpuHandEl) {
-      cpuHandEl.innerHTML = '';
-      for (let i = 0; i < state.opHandCount; i++) {
-        cpuHandEl.innerHTML += '<div class="card disabled" style="--card-color:#555;background:#1a1a2e;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:#475569;">GFS</div>';
-      }
-    }
+    UI._renderCpuHand(state.opHandCount ?? 0);
 
     // ボタン
     document.getElementById('btn-end-attack').disabled = !(state.isMyTurn && state.isAttacking);
