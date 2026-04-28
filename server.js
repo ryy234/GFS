@@ -34,6 +34,7 @@ const CARDS_S = [
   { id: 'album1',          type: 'support', cost: 2, effect: { type: 'heal', value: 4 } },
   { id: 'album2',          type: 'support', cost: 3, effect: { type: 'double_atk' } },
   { id: 'mystery',         type: 'support', cost: 1, effect: { type: 'draw', value: 2 } },
+  { id: 'darkin',          type: 'support', cost: 2, exclusive: 'popeye', effect: { type: 'heal_draw', heal: 3, draw: 1 } },
   { id: 'roti_foxfire',    type: 'support', cost: 1, exclusive: 'roti',   effect: { type: 'add_foxfire', value: 3 } },
   { id: 'autumn_paradise', type: 'block',   cost: 2, block: 5, counter: 1, exclusive: 'autumn' },
   { id: 'foxfire',         type: 'attack',  cost: 0, atk: 1, lifesteal: true, generated: true },
@@ -103,8 +104,8 @@ function leaderOnCard(gs, actor, opponent) {
   if (actor.leaderId === 'roti') {
     actor.rotiCardsPlayed++;
     if (actor.rotiCardsPlayed % 3 === 0) {
-      opponent.hp = Math.max(0, opponent.hp - 3);
-      addLog(gs, `🦊 ろてぃ効果：3ダメ！（${opponent.hp}/15）`);
+      opponent.hp = Math.max(0, opponent.hp - 2);
+      addLog(gs, `🦊 ろてぃ効果：2ダメ！（${opponent.hp}/15）`);
       checkWin(gs);
     }
   }
@@ -141,6 +142,8 @@ function applySupport(gs, actor, c) {
     case 'draw':       drawCards(actor, eff.value); break;
     case 'pp':         actor.pp = Math.min(3, actor.pp + eff.value); addLog(gs, `💎 PP+${eff.value}`); break;
     case 'double_atk': actor.doubleNextAttack = true; addLog(gs, `⬆️ 次アタック2倍！`); break;
+    case 'heal_draw':
+      applyHeal(gs, actor, eff.heal); drawCards(actor, eff.draw); break;
     case 'add_foxfire':
       for (let i = 0; i < eff.value; i++) actor.hand.push('foxfire');
       addLog(gs, `🦊 フォックスファイア×${eff.value}追加`); break;

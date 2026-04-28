@@ -6,7 +6,7 @@ const LEADERS = [
     id: 'roti',
     name: '#0704 ろてぃ',
     image: 'card_icon/リーダーカード/%230704%20ろてぃ.png',
-    effect: 'カードを3枚プレイするごとに相手に3ダメージ',
+    effect: 'カードを3枚プレイするごとに相手に2ダメージ',
     exclusive: ['roti_foxfire'],
   },
   {
@@ -33,7 +33,7 @@ const CARDS = [
   { id: 'abandoned_dog', name: '捨てられた犬',             image: 'card_icon/捨てられた犬.webp',                           type: 'attack',  cost: 1, atk: 2,                                                desc: 'ATK 2' },
   { id: 'bite',          name: '噛みつく',                 image: 'card_icon/噛みつく.webp',                               type: 'attack',  cost: 1, atk: 1, lifesteal: true,                               desc: 'ATK 1　ライフスティール' },
   { id: 'kopuemon',      name: 'こぷえもん',               image: 'card_icon/こぷえもん.webp',                             type: 'attack',  cost: 2, atk: 2, lifesteal: true,                               desc: 'ATK 2　ライフスティール' },
-  { id: 'kirby',         name: '星のコービィ',             image: 'card_icon/星のコービィ.webp',                           type: 'attack',  cost: 2, atk: 2, effect: { type: 'draw', value: 1 },            desc: 'ATK 2　カード1枚ドロー' },
+  { id: 'kirby',         name: '星のコービィ',             image: 'card_icon/星のコービィ.jpg',                           type: 'attack',  cost: 2, atk: 2, effect: { type: 'draw', value: 1 },            desc: 'ATK 2　カード1枚ドロー' },
   { id: 'running_koup',  name: '走るこうぷ',               image: 'card_icon/走るこうぷ.webp',                             type: 'attack',  cost: 1, atk: 1, effect: { type: 'pp',   value: 1 },            desc: 'ATK 1　PP+1' },
   { id: 'sion',          name: 'サイオンGFSフォルム',      image: 'card_icon/サイオンGFSフォルム.webp',                    type: 'attack',  cost: 3, atk: 5,                                                desc: 'ATK 5' },
   { id: 'monster',       name: '化け物',                   image: 'card_icon/化け物.webp',                                 type: 'attack',  cost: 3, atk: 4, lifesteal: true,                               desc: 'ATK 4　ライフスティール' },
@@ -46,12 +46,13 @@ const CARDS = [
   { id: 'ton_tears',     name: 'とんの涙',                 image: 'card_icon/とんの涙.webp',                               type: 'support', cost: 1, effect: { type: 'heal', value: 2 },                   desc: 'HP 2回復' },
   { id: 'album1',        name: 'GFSアルバム Vol.1',        image: 'card_icon/album_2025-04-29_02-41-49.gif',               type: 'support', cost: 2, effect: { type: 'heal', value: 4 },                   desc: 'HP 4回復' },
   { id: 'album2',        name: 'GFSアルバム Vol.2',        image: 'card_icon/album_2025-05-18_02-53-31.gif',               type: 'support', cost: 3, effect: { type: 'double_atk' },                       desc: '次のターンのアタックを2倍' },
-  { id: 'mystery',       name: '謎のカード',               image: 'card_icon/wHd80wfl1qbvgAAAABJRU5ErkJggg.webp',          type: 'support', cost: 1, effect: { type: 'draw', value: 2 },                   desc: 'カード2枚ドロー' },
+  { id: 'mystery',       name: '謎のカード',               image: 'card_icon/ランプの魔人.webp',          type: 'support', cost: 1, effect: { type: 'draw', value: 2 },                   desc: 'カード2枚ドロー' },
   // Leader Exclusive
+  { id: 'darkin',        name: 'ダーキンの兆し',          image: 'card_icon/ダ―キンの兆し.png',                               type: 'support', cost: 2, exclusive: 'popeye', effect: { type: 'heal_draw', heal: 3, draw: 1 }, desc: 'HP 3回復＋カード1枚ドロー' },
   { id: 'roti_foxfire',  name: 'フォックスファイア召喚',  image: 'card_icon/ろてぃのフォックスファイア.png',              type: 'support', cost: 1, exclusive: 'roti',    effect: { type: 'add_foxfire', value: 3 }, desc: 'フォックスファイア×3を手札に加える' },
   { id: 'autumn_paradise', name: 'おーたむの茨の楽園',    image: 'card_icon/おーたむの茨の楽園.png',                      type: 'block',   cost: 2, block: 5, counter: 1, exclusive: 'autumn',              desc: 'ブロック 5　反撃1' },
   // Generated (not in deck)
-  { id: 'foxfire',       name: 'フォックスファイア',       image: 'card_icon/foxfire.svg',                                 type: 'attack',  cost: 0, atk: 1, lifesteal: true, generated: true,              desc: 'ATK 1　ライフスティール' },
+  { id: 'foxfire',       name: 'フォックスファイア',       image: 'card_icon/フォックスファイア.png',                                 type: 'attack',  cost: 0, atk: 1, lifesteal: true, generated: true,              desc: 'ATK 1　ライフスティール' },
 ];
 
 const CARD_MAP  = Object.fromEntries(CARDS.map(c => [c.id, c]));
@@ -192,6 +193,9 @@ const G = {
     if (c.type === 'attack') {
       actor.attackZone.push(cardId);
       this.addLog(`⚔️ ${c.name}（ATK ${c.atk}）を出した`);
+      // アタックカードの即時効果（ドロー・PP回復）
+      if (c.effect?.type === 'draw') this._applyDraw(actor, c.effect.value);
+      if (c.effect?.type === 'pp')   { actor.pp = Math.min(3, actor.pp + c.effect.value); this.addLog(`💎 PP+${c.effect.value}`); }
     } else if (c.type === 'support') {
       this.addLog(`✨ ${c.name}を発動`);
       this._applySupport(actor, target, c);
@@ -224,6 +228,10 @@ const G = {
       case 'add_foxfire':
         for (let i = 0; i < eff.value; i++) actor.hand.push('foxfire');
         this.addLog(`🦊 フォックスファイア×${eff.value}を手札に加えた`);
+        break;
+      case 'heal_draw':
+        this._applyHeal(actor, eff.heal);
+        this._applyDraw(actor, eff.draw);
         break;
     }
   },
@@ -262,8 +270,8 @@ const G = {
     if (actor.leaderId === 'roti') {
       actor.rotiCardsPlayed++;
       if (actor.rotiCardsPlayed % 3 === 0) {
-        opponent.hp = Math.max(0, opponent.hp - 3);
-        this.addLog(`🦊 ろてぃリーダー効果：相手に3ダメージ！（${opponent.hp}/15）`);
+        opponent.hp = Math.max(0, opponent.hp - 2);
+        this.addLog(`🦊 ろてぃリーダー効果：相手に2ダメージ！（${opponent.hp}/15）`);
         this._checkWin();
       }
     }
@@ -560,9 +568,12 @@ const UI = {
     const el = document.getElementById(elId);
     if (!el || !leaderId) return;
     const leader = LEADER_MAP[leaderId];
+    const imgSrc = (leaderId === 'popeye' && awake)
+      ? 'card_icon/リーダーカード/星の観測者スーパーポパイ_覚醒状態.png'
+      : leader.image;
     el.innerHTML = `
       <div class="leader-card ${awake ? 'awake' : ''}">
-        <img src="${leader.image}" alt="${leader.name}">
+        <img src="${imgSrc}" alt="${leader.name}">
         <div class="leader-name">${leader.name}</div>
         ${awake ? '<div class="awake-badge">覚醒</div>' : ''}
       </div>
