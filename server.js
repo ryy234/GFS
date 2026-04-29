@@ -76,10 +76,10 @@ function applyHeal(gs, p, amount) {
   p.hp = Math.min(20, p.hp + amount);
   const healed = p.hp - prev;
   if (healed > 0) {
-    addLog(gs, `💚 HP+${healed}回復（${p.hp}/15）`);
+    addLog(gs, `💚 HP+${healed}回復（${p.hp}/20）`);
     if (p.leaderId === 'popeye' && !p.popeyeAwake) {
       p.popeyeHealTotal += healed;
-      if (p.popeyeHealTotal >= 13) {
+      if (p.popeyeHealTotal >= 12) {
         p.popeyeAwake = true;
         addLog(gs, `⭐ スーパーポパイ覚醒！全アタックにLS！`);
       }
@@ -94,7 +94,7 @@ function calcLifeStealHeal(actor, actualDamage) {
   if (actor.leaderId === 'popeye' && actor.popeyeAwake) return actualDamage;
   const rawLS = actor.attackZone.filter(id => CMAP[id]?.lifesteal).reduce((s, id) => s + (CMAP[id]?.atk || 0), 0);
   if (rawLS <= 0) return 0;
-  return Math.floor(actualDamage * rawLS / rawTotal);
+  return Math.min(rawLS, actualDamage);
 }
 
 function addLog(gs, msg) {
@@ -107,7 +107,7 @@ function leaderOnCard(gs, actor, opponent) {
     actor.rotiCardsPlayed++;
     if (actor.rotiCardsPlayed % 3 === 0) {
       opponent.hp = Math.max(0, opponent.hp - 2);
-      addLog(gs, `🦊 ろてぃ効果：2ダメ！（${opponent.hp}/15）`);
+      addLog(gs, `🦊 ろてぃ効果：2ダメ！（${opponent.hp}/20）`);
       checkWin(gs);
     }
   }
@@ -122,13 +122,21 @@ function checkWin(gs) {
 // ── ゲーム作成 ──────────────────────────────────────────────────────────────
 function createPlayerState(leaderId) {
   const deck = createDeck(leaderId);
-  return { hp: 20, hand: deck.splice(0, 4), deck, leaderId, pp: 3, attackPPSpent: 0, blockPP: 3, attackZone: [], blockZone: [], doubleNextAttack: false, rotiCardsPlayed: 0, popeyeHealTotal: 0, popeyeAwake: false };
+  return {
+    hp: 20, hand: deck.splice(0, 4), deck, leaderId,
+    pp: 3, attackPPSpent: 0, blockPP: 3,
+    attackZone: [], blockZone: [],
+    doubleNextAttack: false, doublePending: false,
+    rotiCardsPlayed: 0, popeyeHealTotal: 0, popeyeAwake: false,
+  };
 }
 
 function createGame(p1Leader, p2Leader) {
   const gs = {
     players: { p1: createPlayerState(p1Leader), p2: createPlayerState(p2Leader) },
     phase: 'p1_attack', round: 1, log: [], winner: null,
+    lastDamage: 0, lastDamageTarget: null,
+    lastExclusiveCard: null, lastExclusiveCardOwner: null,
   };
   drawCard(gs.players.p1);
   addLog(gs, `🃏 ゲーム開始！P1のアタックフェーズ`);
@@ -143,9 +151,8 @@ function applySupport(gs, actor, c) {
     case 'heal':       applyHeal(gs, actor, eff.value); break;
     case 'draw':       drawCards(actor, eff.value); break;
     case 'pp':         actor.pp = Math.min(3, actor.pp + eff.value); addLog(gs, `💎 PP+${eff.value}`); break;
-    case 'double_atk': actor.doubleNextAttack = true; addLog(gs, `⬆️ 次アタック2倍！`); break;
-    case 'heal_draw':
-      applyHeal(gs, actor, eff.heal); drawCards(actor, eff.draw); break;
+    case 'double_atk': actor.doublePending = true; addLog(gs, `⬆️ 次ターンのアタック2倍！`); break;
+    case 'heal_draw':  applyHeal(gs, actor, eff.heal); drawCards(actor, eff.draw); break;
     case 'add_foxfire':
       for (let i = 0; i < eff.value; i++) actor.hand.push('foxfire');
       addLog(gs, `🦊 フォックスファイア×${eff.value}追加`); break;
@@ -162,8 +169,16 @@ function actionPlayAttack(gs, actorId, cardId) {
   if (actor.pp < c.cost) return 'not enough PP';
   actor.pp -= c.cost; actor.attackPPSpent += c.cost;
   actor.hand.splice(actor.hand.indexOf(cardId), 1);
-  if (c.type === 'attack') { actor.attackZone.push(cardId); addLog(gs, `⚔️ ${cardId}（ATK ${c.atk}）を出した`); }
-  else { addLog(gs, `✨ ${cardId}を発動`); applySupport(gs, actor, c); }
+  if (c.type === 'attack') {
+    actor.attackZone.push(cardId);
+    addLog(gs, `⚔️ ${cardId}（ATK ${c.atk}）を出した`);
+    if (c.effect?.type === 'draw') drawCards(actor, c.effect.value);
+    if (c.effect?.type === 'pp') { actor.pp = Math.min(3, actor.pp + c.effect.value); addLog(gs, `💎 PP+${c.effect.value}`); }
+  } else {
+    addLog(gs, `✨ ${cardId}を発動`);
+    applySupport(gs, actor, c);
+  }
+  if (c.exclusive) { gs.lastExclusiveCard = cardId; gs.lastExclusiveCardOwner = actorId; }
   leaderOnCard(gs, actor, opp);
   checkWin(gs);
   return null;
@@ -182,13 +197,14 @@ function actionPlayBlock(gs, actorId, cardId) {
   addLog(gs, `🛡 ${cardId}（BLK ${c.block}）でブロック`);
   if (c.effect?.type === 'draw') drawCards(actor, c.effect.value);
   if (c.effect?.type === 'heal') applyHeal(gs, actor, c.effect.value);
+  if (c.exclusive) { gs.lastExclusiveCard = cardId; gs.lastExclusiveCardOwner = actorId; }
   leaderOnCard(gs, actor, opp);
   return null;
 }
 
 function actionEndAttack(gs, actorId) {
   const actor = gs.players[actorId];
-  actor.blockPP = 3 - actor.attackPPSpent;
+  actor.blockPP = actor.pp;
   if (gs.phase === 'p1_attack') { gs.phase = 'p2_block'; addLog(gs, `📊 P1アタック終了 → P2ブロックフェーズ`); }
   else if (gs.phase === 'p2_attack') { gs.phase = 'p1_block'; addLog(gs, `📊 P2アタック終了 → P1ブロックフェーズ`); }
   return null;
@@ -202,16 +218,28 @@ function actionEndBlock(gs, blockerId) {
   const totalBlk = blocker.blockZone.reduce((s, id) => s + (CMAP[id]?.block || 0), 0);
   const damage = Math.max(0, totalAtk - totalBlk);
   addLog(gs, `⚡ ATK${totalAtk} vs BLK${totalBlk} → DMG${damage}`);
+  gs.lastDamage = 0;
+  gs.lastDamageTarget = null;
   if (damage > 0) {
     blocker.hp = Math.max(0, blocker.hp - damage);
-    addLog(gs, `💥 ${damage}ダメ！（${blocker.hp}/15）`);
+    addLog(gs, `💥 ${damage}ダメ！（${blocker.hp}/20）`);
+    gs.lastDamage = damage;
+    gs.lastDamageTarget = blockerId;
     const lsHeal = calcLifeStealHeal(attacker, damage);
     if (lsHeal > 0) applyHeal(gs, attacker, lsHeal);
   }
   const counterDmg = blocker.blockZone.reduce((s, id) => s + (CMAP[id]?.counter || 0), 0);
-  if (damage === 0 && counterDmg > 0) { attacker.hp = Math.max(0, attacker.hp - counterDmg); addLog(gs, `🌿 反撃${counterDmg}ダメ！`); }
-  if (blocker.leaderId === 'autumn' && damage === 0) { attacker.hp = Math.max(0, attacker.hp - 1); addLog(gs, `🍂 おーたむ反撃1ダメ！`); }
-  attacker.attackZone = []; blocker.blockZone = []; attacker.doubleNextAttack = false;
+  if (damage === 0 && counterDmg > 0) {
+    attacker.hp = Math.max(0, attacker.hp - counterDmg);
+    addLog(gs, `🌿 反撃${counterDmg}ダメ！`);
+  }
+  if (blocker.leaderId === 'autumn' && damage === 0 && totalBlk > 0) {
+    attacker.hp = Math.max(0, attacker.hp - 2);
+    addLog(gs, `🍂 おーたむ反撃2ダメ！`);
+  }
+  attacker.attackZone = []; blocker.blockZone = [];
+  attacker.doubleNextAttack = attacker.doublePending;
+  attacker.doublePending = false;
   checkWin(gs);
   if (gs.winner) return null;
   if (gs.phase === 'p2_block') {
@@ -245,6 +273,9 @@ function buildState(gs, myId) {
     phase: gs.phase, isMyTurn, isAttacking, isBlocking,
     round: gs.round, log: [...gs.log],
     winner: gs.winner ? (gs.winner === myId ? 'me' : gs.winner === 'draw' ? 'draw' : 'opponent') : null,
+    lastDamage: gs.lastDamage || 0,
+    lastDamageIsMe: gs.lastDamageTarget === myId,
+    lastExclusiveCard: gs.lastExclusiveCard && gs.lastExclusiveCardOwner === myId ? gs.lastExclusiveCard : null,
   };
 }
 
@@ -310,7 +341,6 @@ function handle(ws, msg) {
       if (room.players.length >= 2) return send(ws, { type: 'error', message: '満員です' });
       ws.playerId = 'p2'; ws.roomId = room.id;
       room.players.push(ws); room.playerIds.push('p2');
-      // 両者にリーダー選択を促す
       room.players.forEach(p => send(p, { type: 'select_leader' }));
       break;
     }
@@ -320,7 +350,6 @@ function handle(ws, msg) {
       if (!room) return;
       room.leaders[ws.playerId] = msg.leaderId;
       send(ws, { type: 'leader_chosen', leaderId: msg.leaderId });
-      // 両者が選んだらゲーム開始
       if (room.leaders.p1 && room.leaders.p2) {
         room.gs = createGame(room.leaders.p1, room.leaders.p2);
         bcast(room, myId => ({ type: 'game_start', state: buildState(room.gs, myId), playerId: myId }));
@@ -342,6 +371,9 @@ function handle(ws, msg) {
       if (msg.type === 'end_block')        err = actionEndBlock(gs,   ws.playerId);
       if (err) return send(ws, { type: 'error', message: err });
       bcast(room, myId => ({ type: 'game_update', state: buildState(gs, myId) }));
+      // 一時フィールドをリセット
+      gs.lastDamage = 0; gs.lastDamageTarget = null;
+      gs.lastExclusiveCard = null; gs.lastExclusiveCardOwner = null;
       if (gs.winner) bcast(room, myId => ({ type: 'game_over', isWinner: buildState(gs, myId).winner === 'me' }));
       break;
     }

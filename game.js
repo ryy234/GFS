@@ -900,6 +900,17 @@ const Online = {
     // 相手手札（裏向き）
     UI._renderCpuHand(state.opHandCount ?? 0);
 
+    // 専用カード演出
+    if (state.lastExclusiveCard) {
+      const excCard = CARD_MAP[state.lastExclusiveCard];
+      if (excCard) UI._showExclusiveAnimation(excCard);
+    }
+
+    // ダメージ演出
+    if (state.lastDamage > 0) {
+      UI._showDamageAnimation(state.lastDamageIsMe ? 'player' : 'cpu', state.lastDamage);
+    }
+
     // ボタン
     document.getElementById('btn-end-attack').disabled = !(state.isMyTurn && state.isAttacking);
     document.getElementById('btn-end-block').disabled  = !(state.isMyTurn && state.isBlocking);
