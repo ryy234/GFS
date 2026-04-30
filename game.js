@@ -107,6 +107,7 @@ function createPlayer(leaderId) {
     blockPP: 3,    // PP available for blocking (3 - attackPPSpent at end of attack phase)
     attackZone: [],
     blockZone: [],
+    supportZone: [],
     doubleNextAttack: false,
     doublePending: false,
     // leader counters
@@ -140,6 +141,7 @@ const G = {
     this.player.attackPPSpent = 0;
     this.addLog(`🃏 ゲーム開始！あなたのアタックフェーズ`);
     UI.render();
+    UI._showPhaseAnimation('attack');
   },
 
   addLog(msg) {
@@ -202,6 +204,7 @@ const G = {
       if (c.effect?.type === 'draw') this._applyDraw(actor, c.effect.value);
       if (c.effect?.type === 'pp')   { actor.pp = Math.min(3, actor.pp + c.effect.value); this.addLog(`💎 PP+${c.effect.value}`); }
     } else if (c.type === 'support') {
+      actor.supportZone.push(cardId);
       this.addLog(`✨ ${c.name}を発動`);
       this._applySupport(actor, target, c);
     }
@@ -362,6 +365,7 @@ const G = {
 
     // ゾーンをクリア
     attacker.attackZone = [];
+    attacker.supportZone = [];
     defender.blockZone = [];
     attacker.doubleNextAttack = attacker.doublePending;
     attacker.doublePending = false;
@@ -384,6 +388,7 @@ const G = {
       this.player.attackPPSpent = 0;
       this.addLog(`─── Round ${this.round} ───　あなたのアタックフェーズ`);
       UI.render();
+      UI._showPhaseAnimation('attack');
     }
   },
 
@@ -450,6 +455,7 @@ const G = {
     const totalAtk = this._calcTotalAtk(cpu);
     this.addLog(`📊 CPU アタック合計: ${totalAtk}。あなたのブロックフェーズ！`);
     UI.render();
+    UI._showPhaseAnimation('block');
   },
 
   // ── ブロック終了ボタン ──
@@ -554,6 +560,19 @@ const UI = {
     ).join('');
   },
 
+  // フェーズ切り替え演出
+  _showPhaseAnimation(type) {
+    const src = type === 'attack' ? 'GFS_card/ATTACK PHASE.png' : 'GFS_card/BLOCK PHASE.png';
+    const overlay = document.createElement('div');
+    overlay.className = 'phase-anim-overlay';
+    overlay.innerHTML = `<img src="${src}" class="phase-anim-img" alt="${type}" onerror="this.style.display='none'">`;
+    document.body.appendChild(overlay);
+    setTimeout(() => {
+      overlay.classList.add('phase-fade-out');
+      setTimeout(() => overlay.remove(), 400);
+    }, 1200);
+  },
+
   // 専用カード発動演出
   _showExclusiveAnimation(card) {
     const overlay = document.createElement('div');
@@ -639,8 +658,8 @@ const UI = {
     if (plbl) plbl.textContent = isAttackPhase ? '⚔️ あなたのアタックゾーン' : isBlockPhase ? '🛡 あなたのブロックゾーン' : '🃏 プレイゾーン';
     if (clbl) clbl.textContent = (phase === PHASE.P2_ATTACK) ? '⚔️ CPU アタックゾーン' : (phase === PHASE.P2_BLOCK) ? '🛡 CPU ブロックゾーン' : '🃏 CPU プレイゾーン';
 
-    this._renderZone('cpu-play-zone',    [...c.attackZone, ...c.blockZone]);
-    this._renderZone('player-play-zone', [...p.attackZone, ...p.blockZone]);
+    this._renderZone('cpu-play-zone',    [...c.attackZone, ...c.blockZone, ...c.supportZone]);
+    this._renderZone('player-play-zone', [...p.attackZone, ...p.blockZone, ...p.supportZone]);
     this._renderCpuHand(c.hand.length);
     this._renderHand(p, isAttackPhase, isBlockPhase);
 
@@ -914,9 +933,15 @@ const Online = {
     if (plbl) plbl.textContent = state.isAttacking ? '⚔️ あなたのアタックゾーン' : state.isBlocking ? '🛡 あなたのブロックゾーン' : '🃏 プレイゾーン';
     if (clbl) clbl.textContent = (!state.isMyTurn) ? '⚔️/🛡 相手のプレイゾーン' : '🃏 相手プレイゾーン';
 
+    // フェーズ切り替え演出
+    if (state.isAttacking && !this._prevIsAttacking) UI._showPhaseAnimation('attack');
+    if (state.isBlocking  && !this._prevIsBlocking)  UI._showPhaseAnimation('block');
+    this._prevIsAttacking = state.isAttacking;
+    this._prevIsBlocking  = state.isBlocking;
+
     // ゾーン
-    UI._renderZone('player-play-zone', [...state.myAttackZone, ...state.myBlockZone]);
-    UI._renderZone('cpu-play-zone',    [...state.opAttackZone, ...state.opBlockZone]);
+    UI._renderZone('player-play-zone', [...(state.myAttackZone||[]), ...(state.myBlockZone||[]), ...(state.mySupportZone||[])]);
+    UI._renderZone('cpu-play-zone',    [...(state.opAttackZone||[]), ...(state.opBlockZone||[]), ...(state.opSupportZone||[])]);
 
     // 手札
     const handEl = document.getElementById('player-hand');

@@ -127,7 +127,7 @@ function createPlayerState(leaderId) {
   return {
     hp: 20, hand: deck.splice(0, 4), deck, leaderId,
     pp: 3, attackPPSpent: 0, blockPP: 3,
-    attackZone: [], blockZone: [],
+    attackZone: [], blockZone: [], supportZone: [],
     doubleNextAttack: false, doublePending: false,
     rotiCardsPlayed: 0, popeyeHealTotal: 0, popeyeAwake: false,
   };
@@ -177,6 +177,7 @@ function actionPlayAttack(gs, actorId, cardId) {
     if (c.effect?.type === 'draw') drawCards(actor, c.effect.value);
     if (c.effect?.type === 'pp') { actor.pp = Math.min(3, actor.pp + c.effect.value); addLog(gs, `💎 PP+${c.effect.value}`); }
   } else {
+    actor.supportZone.push(cardId);
     addLog(gs, `✨ ${cardId}を発動`);
     applySupport(gs, actor, c);
   }
@@ -239,7 +240,7 @@ function actionEndBlock(gs, blockerId) {
     attacker.hp = Math.max(0, attacker.hp - 2);
     addLog(gs, `🍂 おーたむ反撃2ダメ！`);
   }
-  attacker.attackZone = []; blocker.blockZone = [];
+  attacker.attackZone = []; attacker.supportZone = []; blocker.blockZone = [];
   attacker.doubleNextAttack = attacker.doublePending;
   attacker.doublePending = false;
   checkWin(gs);
@@ -267,10 +268,10 @@ function buildState(gs, myId) {
   return {
     myHp: me.hp, myHand: me.hand, myLeader: me.leaderId,
     myPP: me.pp, myBlockPP: me.blockPP,
-    myAttackZone: me.attackZone, myBlockZone: me.blockZone,
+    myAttackZone: me.attackZone, myBlockZone: me.blockZone, mySupportZone: me.supportZone,
     myPopeyeAwake: me.popeyeAwake, myPopeyeHealTotal: me.popeyeHealTotal,
     opHp: opp.hp, opHandCount: opp.hand.length, opLeader: opp.leaderId,
-    opAttackZone: opp.attackZone, opBlockZone: opp.blockZone,
+    opAttackZone: opp.attackZone, opBlockZone: opp.blockZone, opSupportZone: opp.supportZone,
     opPopeyeAwake: opp.popeyeAwake, opPopeyeHealTotal: opp.popeyeHealTotal,
     phase: gs.phase, isMyTurn, isAttacking, isBlocking,
     round: gs.round, log: [...gs.log],
