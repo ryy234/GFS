@@ -134,8 +134,14 @@
             <div id="round-display">Round 1</div>
           </div>
           <div class="ctrl-buttons">
-            <button id="btn-end-attack" class="btn btn-danger btn-sm" disabled>アタック終了</button>
-            <button id="btn-end-block"  class="btn btn-info  btn-sm" disabled>ブロック終了</button>
+            <div class="ctrl-col">
+              <div class="zone-total atk-total" id="atk-total-display">ATK: —</div>
+              <button id="btn-end-attack" class="btn btn-danger btn-sm" disabled>アタック終了</button>
+            </div>
+            <div class="ctrl-col">
+              <div class="zone-total blk-total" id="blk-total-display">BLK: —</div>
+              <button id="btn-end-block" class="btn btn-info btn-sm" disabled>ブロック終了</button>
+            </div>
           </div>
         </div>
 

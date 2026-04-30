@@ -276,6 +276,10 @@ input[type="text"]:focus { outline: none; border-color: var(--accent); }
 #phase-display { font-size: .72rem; color: var(--gold); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #round-display  { font-size: .62rem; color: var(--dim); }
 .ctrl-buttons { display: flex; gap: 6px; flex-shrink: 0; }
+.ctrl-col { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.zone-total { font-size: .65rem; font-weight: 700; letter-spacing: .5px; }
+.atk-total  { color: var(--atk); }
+.blk-total  { color: var(--blk); }
 
 /* 手札ラベル */
 .hand-label { font-size: .65rem; color: var(--dim); font-weight: 700; flex-shrink: 0; }
@@ -288,6 +292,7 @@ input[type="text"]:focus { outline: none; border-color: var(--accent); }
   gap: 8px;
   overflow-x: auto;
   align-items: flex-end;
+  justify-content: center;
   padding-bottom: 4px;
   scrollbar-width: thin;
   scrollbar-color: var(--accent) transparent;
@@ -339,16 +344,16 @@ input[type="text"]:focus { outline: none; border-color: var(--accent); }
 }
 .card-img-wrap img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
 
+.card-cost-badges { display: flex; align-items: center; gap: 3px; flex-wrap: wrap; }
 .card-footer { padding: 2px 5px 4px; flex-shrink: 0; }
 .card-name  { font-size: .62rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); margin-bottom: 1px; }
 .card-stat  { font-size: .72rem; font-weight: 700; color: var(--card-color, #aaa); margin-bottom: 1px; }
-.card-desc  { font-size: .56rem; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.card-badges { display: flex; gap: 2px; margin-top: 1px; min-height: 13px; }
-.badge-spacer { display: inline-block; width: 1px; height: 11px; }
-.badge { font-size: .46rem; font-weight: 900; padding: 1px 3px; border-radius: 3px; }
+.card-desc  { font-size: .56rem; color: var(--dim); white-space: normal; line-height: 1.35; }
+.badge { font-size: .44rem; font-weight: 900; padding: 1px 3px; border-radius: 3px; }
 .badge-ls  { background: #dc2626; color: #fff; }
 .badge-ex  { background: var(--gold); color: #000; }
 .badge-gen { background: #7c3aed; color: #fff; }
+.zone .card .badge { display: none; }
 
 /* ── CPU 手札（裏面） ── */
 .cpu-hand-area {

@@ -628,6 +628,18 @@ const UI = {
     document.getElementById('btn-end-attack').disabled = !isAttackPhase;
     document.getElementById('btn-end-block').disabled  = !isBlockPhase;
 
+    // ATK/BLK 合計表示（P1フェーズはプレイヤーが攻撃側）
+    const p1Phases = [PHASE.P1_ATTACK, PHASE.P2_BLOCK, PHASE.RESOLVE_P1];
+    const atkSide = p1Phases.includes(phase) ? p : c;
+    const blkSide = p1Phases.includes(phase) ? c : p;
+    const rawAtk  = atkSide.attackZone.reduce((s, id) => s + (CARD_MAP[id]?.atk || 0), 0);
+    const dispAtk = atkSide.doubleNextAttack ? rawAtk * 2 : rawAtk;
+    const dispBlk = blkSide.blockZone.reduce((s, id) => s + (CARD_MAP[id]?.block || 0), 0);
+    const atkEl = document.getElementById('atk-total-display');
+    const blkEl = document.getElementById('blk-total-display');
+    if (atkEl) atkEl.textContent = `ATK: ${dispAtk}`;
+    if (blkEl) blkEl.textContent = `BLK: ${dispBlk}`;
+
     const logEl = document.getElementById('battle-log');
     logEl.innerHTML = G.log.map(l => `<div class="log-line">${l}</div>`).join('');
   },
@@ -750,7 +762,10 @@ const UI = {
 
     el.innerHTML = `
       <div class="card-header">
-        <span class="card-cost">${cost}💎</span>
+        <div class="card-cost-badges">
+          <span class="card-cost">${cost}💎</span>
+          ${badges.join('')}
+        </div>
         <span class="card-type-label">${card.type === 'attack' ? '⚔️' : card.type === 'block' ? '🛡' : '✨'}</span>
       </div>
       <div class="card-img-wrap">
@@ -760,7 +775,6 @@ const UI = {
         <div class="card-name">${card.name}</div>
         <div class="card-stat">${statLine}</div>
         <div class="card-desc">${card.desc}</div>
-        <div class="card-badges">${badges.length ? badges.join('') : '<span class="badge-spacer"></span>'}</div>
       </div>
     `;
     return el;
@@ -899,6 +913,18 @@ const Online = {
 
     // 相手手札（裏向き）
     UI._renderCpuHand(state.opHandCount ?? 0);
+
+    // ATK/BLK 合計表示
+    const p1IsAttacker = ['p1_attack', 'p2_block', 'resolve_p1'].includes(state.phase);
+    const iAmAttacker  = (p1IsAttacker && this.playerId === 'p1') || (!p1IsAttacker && this.playerId === 'p2');
+    const onAtkZone = iAmAttacker ? state.myAttackZone : state.opAttackZone;
+    const onBlkZone = iAmAttacker ? state.opBlockZone  : state.myBlockZone;
+    const onDispAtk = (onAtkZone || []).reduce((s, id) => s + (CARD_MAP[id]?.atk || 0), 0);
+    const onDispBlk = (onBlkZone || []).reduce((s, id) => s + (CARD_MAP[id]?.block || 0), 0);
+    const onAtkEl = document.getElementById('atk-total-display');
+    const onBlkEl = document.getElementById('blk-total-display');
+    if (onAtkEl) onAtkEl.textContent = `ATK: ${onDispAtk}`;
+    if (onBlkEl) onBlkEl.textContent = `BLK: ${onDispBlk}`;
 
     // 専用カード演出
     if (state.lastExclusiveCard) {
