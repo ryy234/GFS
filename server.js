@@ -77,6 +77,8 @@ function applyHeal(gs, p, amount) {
   const healed = p.hp - prev;
   if (healed > 0) {
     addLog(gs, `💚 HP+${healed}回復（${p.hp}/20）`);
+    gs.lastHeal = (gs.lastHeal || 0) + healed;
+    gs.lastHealTarget = gs.players.p1 === p ? 'p1' : 'p2';
     if (p.leaderId === 'popeye' && !p.popeyeAwake) {
       p.popeyeHealTotal += healed;
       if (p.popeyeHealTotal >= 12) {
@@ -266,15 +268,17 @@ function buildState(gs, myId) {
     myHp: me.hp, myHand: me.hand, myLeader: me.leaderId,
     myPP: me.pp, myBlockPP: me.blockPP,
     myAttackZone: me.attackZone, myBlockZone: me.blockZone,
-    myPopeyeAwake: me.popeyeAwake,
+    myPopeyeAwake: me.popeyeAwake, myPopeyeHealTotal: me.popeyeHealTotal,
     opHp: opp.hp, opHandCount: opp.hand.length, opLeader: opp.leaderId,
     opAttackZone: opp.attackZone, opBlockZone: opp.blockZone,
-    opPopeyeAwake: opp.popeyeAwake,
+    opPopeyeAwake: opp.popeyeAwake, opPopeyeHealTotal: opp.popeyeHealTotal,
     phase: gs.phase, isMyTurn, isAttacking, isBlocking,
     round: gs.round, log: [...gs.log],
     winner: gs.winner ? (gs.winner === myId ? 'me' : gs.winner === 'draw' ? 'draw' : 'opponent') : null,
     lastDamage: gs.lastDamage || 0,
     lastDamageIsMe: gs.lastDamageTarget === myId,
+    lastHeal: gs.lastHeal || 0,
+    lastHealIsMe: gs.lastHealTarget === myId,
     lastExclusiveCard: gs.lastExclusiveCard && gs.lastExclusiveCardOwner === myId ? gs.lastExclusiveCard : null,
   };
 }
@@ -373,6 +377,7 @@ function handle(ws, msg) {
       bcast(room, myId => ({ type: 'game_update', state: buildState(gs, myId) }));
       // 一時フィールドをリセット
       gs.lastDamage = 0; gs.lastDamageTarget = null;
+      gs.lastHeal = 0; gs.lastHealTarget = null;
       gs.lastExclusiveCard = null; gs.lastExclusiveCardOwner = null;
       if (gs.winner) bcast(room, myId => ({ type: 'game_over', isWinner: buildState(gs, myId).winner === 'me' }));
       break;

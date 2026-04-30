@@ -128,20 +128,19 @@
         <div class="zone-label" id="cpu-zone-label">🃏 CPU プレイゾーン</div>
         <div class="zone" id="cpu-play-zone"><div class="zone-empty">—</div></div>
 
+        <div class="battle-totals-bar">
+          <div class="battle-total atk-total" id="atk-total-display">ATK: —</div>
+          <div class="battle-total blk-total" id="blk-total-display">BLK: —</div>
+        </div>
+
         <div class="controls-bar">
           <div class="phase-info">
             <div id="phase-display">準備中...</div>
             <div id="round-display">Round 1</div>
           </div>
           <div class="ctrl-buttons">
-            <div class="ctrl-col">
-              <div class="zone-total atk-total" id="atk-total-display">ATK: —</div>
-              <button id="btn-end-attack" class="btn btn-danger btn-sm" disabled>アタック終了</button>
-            </div>
-            <div class="ctrl-col">
-              <div class="zone-total blk-total" id="blk-total-display">BLK: —</div>
-              <button id="btn-end-block" class="btn btn-info btn-sm" disabled>ブロック終了</button>
-            </div>
+            <button id="btn-end-attack" class="btn btn-danger btn-sm" disabled>アタック終了</button>
+            <button id="btn-end-block"  class="btn btn-info  btn-sm" disabled>ブロック終了</button>
           </div>
         </div>
 

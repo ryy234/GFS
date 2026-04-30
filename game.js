@@ -245,11 +245,12 @@ const G = {
 
   _applyHeal(actor, amount) {
     const prev = actor.hp;
-    actor.hp = Math.min(20,actor.hp + amount);
+    actor.hp = Math.min(20, actor.hp + amount);
     const healed = actor.hp - prev;
     if (healed > 0) {
       this.addLog(`💚 HP+${healed}回復（${actor.hp}/20）`);
-      // スーパーポパイ覚醒チェック
+      const who = actor === this.player ? 'player' : 'cpu';
+      UI._showHealAnimation(who, healed);
       if (actor.leaderId === 'popeye' && !actor.popeyeAwake) {
         actor.popeyeHealTotal += healed;
         if (actor.popeyeHealTotal >= 12) {
@@ -570,7 +571,7 @@ const UI = {
     }, 1600);
   },
 
-  // ダメージ演出（リーダーの上にdamage.png + テキスト）
+  // ダメージ演出
   _showDamageAnimation(who, amount) {
     const targetId = who === 'player' ? 'player-leader-block' : 'cpu-leader-block';
     const targetEl = document.getElementById(targetId);
@@ -588,6 +589,24 @@ const UI = {
     setTimeout(() => el.remove(), 1400);
   },
 
+  // 回復演出
+  _showHealAnimation(who, amount) {
+    const targetId = who === 'player' ? 'player-leader-block' : 'cpu-leader-block';
+    const targetEl = document.getElementById(targetId);
+    if (!targetEl) return;
+    const rect = targetEl.getBoundingClientRect();
+    const el = document.createElement('div');
+    el.className = 'heal-anim';
+    el.style.left = `${rect.left + rect.width / 2}px`;
+    el.style.top  = `${rect.top  + rect.height / 2}px`;
+    el.innerHTML  = `
+      <img src="card_icon/heal.png" class="heal-img" alt="heal" onerror="this.style.display='none'">
+      <div class="heal-text">+${amount} 回復！</div>
+    `;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1400);
+  },
+
   render() {
     const p = G.player, c = G.cpu;
     if (!p || !c) return;
@@ -598,8 +617,8 @@ const UI = {
     const playerPP = isAttackPhase ? p.pp : isBlockPhase ? p.blockPP : 0;
 
     // リーダーブロック（HP数値 + PP横並び）
-    this._renderLeaderBlock('player-leader-block', p.leaderId, p.popeyeAwake, p.hp, playerPP);
-    this._renderLeaderBlock('cpu-leader-block',    c.leaderId, c.popeyeAwake, c.hp, c.pp);
+    this._renderLeaderBlock('player-leader-block', p.leaderId, p.popeyeAwake, p.hp, playerPP, p.popeyeHealTotal);
+    this._renderLeaderBlock('cpu-leader-block',    c.leaderId, c.popeyeAwake, c.hp, c.pp, c.popeyeHealTotal);
 
     // フェーズ
     const phaseText = {
@@ -644,7 +663,7 @@ const UI = {
     logEl.innerHTML = G.log.map(l => `<div class="log-line">${l}</div>`).join('');
   },
 
-  _renderLeaderBlock(elId, leaderId, awake, hp, pp) {
+  _renderLeaderBlock(elId, leaderId, awake, hp, pp, healTotal = 0) {
     const el = document.getElementById(elId);
     if (!el || !leaderId) return;
     const leader = LEADER_MAP[leaderId];
@@ -653,12 +672,20 @@ const UI = {
       : leader.image;
     const hpColor = hp > 13 ? '#4ade80' : hp > 7 ? '#fbbf24' : '#f87171';
     const dots = [0,1,2].map(i => `<span class="pp-dot ${i < pp ? 'filled' : ''}"></span>`).join('');
+    let badge = '';
+    if (leaderId === 'popeye') {
+      badge = awake
+        ? '<div class="awake-badge">覚醒</div>'
+        : `<div class="awake-badge popeye-progress">覚醒まで${healTotal}</div>`;
+    } else if (awake) {
+      badge = '<div class="awake-badge">覚醒</div>';
+    }
     el.innerHTML = `
       <div class="leader-block ${awake ? 'awake' : ''}">
         <div class="leader-img-wrap">
           <img src="${imgSrc}" alt="${leader.name}" onerror="this.parentNode.style.background='#1a1a2e'">
           <div class="leader-hp-num" style="color:${hpColor}">❤️${hp}</div>
-          ${awake ? '<div class="awake-badge">覚醒</div>' : ''}
+          ${badge}
         </div>
         <div class="leader-name-sm">${leader.name}</div>
         <div class="pp-row-h">${dots}</div>
@@ -869,8 +896,8 @@ const Online = {
   _render(state) {
     // リーダーブロック（HP + PP 統合）
     const ppVal = state.isAttacking ? state.myPP : state.isBlocking ? state.myBlockPP : 0;
-    UI._renderLeaderBlock('player-leader-block', state.myLeader, state.myPopeyeAwake, state.myHp, ppVal);
-    UI._renderLeaderBlock('cpu-leader-block',    state.opLeader, state.opPopeyeAwake, state.opHp, 0);
+    UI._renderLeaderBlock('player-leader-block', state.myLeader, state.myPopeyeAwake, state.myHp, ppVal, state.myPopeyeHealTotal);
+    UI._renderLeaderBlock('cpu-leader-block',    state.opLeader, state.opPopeyeAwake, state.opHp, 0, state.opPopeyeHealTotal);
 
     // フェーズ
     const phaseLabel = {
@@ -935,6 +962,10 @@ const Online = {
     // ダメージ演出
     if (state.lastDamage > 0) {
       UI._showDamageAnimation(state.lastDamageIsMe ? 'player' : 'cpu', state.lastDamage);
+    }
+    // 回復演出
+    if (state.lastHeal > 0) {
+      UI._showHealAnimation(state.lastHealIsMe ? 'player' : 'cpu', state.lastHeal);
     }
 
     // ボタン
