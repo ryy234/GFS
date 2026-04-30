@@ -46,6 +46,7 @@ const CARDS_S = [
   { id: 'darkin',          type: 'support', cost: 2, exclusive: 'popeye', effect: { type: 'heal_draw', heal: 3, draw: 1 } },
   { id: 'roti_foxfire',    type: 'support', cost: 2, exclusive: 'roti',   effect: { type: 'add_foxfire', value: 3 } },
   { id: 'autumn_paradise', type: 'block',   cost: 2, block: 5, counter: 1, exclusive: 'autumn' },
+  { id: 'autumn_magic',   type: 'block',   cost: 1, block: 4, exclusive: 'autumn' },
   { id: 'foxfire',         type: 'attack',  cost: 0, atk: 1, lifesteal: true, generated: true },
 ];
 const CMAP = Object.fromEntries(CARDS_S.map(c => [c.id, c]));
@@ -114,7 +115,7 @@ function addLog(gs, msg) {
 function leaderOnCard(gs, actor, opponent) {
   if (actor.leaderId === 'roti') {
     actor.rotiCardsPlayed++;
-    if (actor.rotiCardsPlayed % 3 === 0) {
+    if (actor.rotiCardsPlayed % 4 === 0) {
       opponent.hp = Math.max(0, opponent.hp - 2);
       addLog(gs, `🦊 ろてぃ効果：2ダメ！（${opponent.hp}/20）`);
       checkWin(gs);

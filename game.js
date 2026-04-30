@@ -6,7 +6,7 @@ const LEADERS = [
     id: 'roti',
     name: '#0704 ろてぃ',
     image: 'card_icon/リーダーカード/%230704%20ろてぃ.png',
-    effect: 'カードを3枚プレイするごとに相手に2ダメージ',
+    effect: 'カードを4枚プレイするごとに相手に2ダメージ',
     exclusive: ['roti_foxfire'],
   },
   {
@@ -21,7 +21,7 @@ const LEADERS = [
     name: '秋の魔法使い おーたむ',
     image: 'card_icon/リーダーカード/秋の魔法使い おーたむ.png',
     effect: 'ブロック成功（ダメージ0）時、相手に2ダメージ',
-    exclusive: ['autumn_paradise'],
+    exclusive: ['autumn_paradise', 'autumn_magic'],
   },
 ];
 
@@ -60,6 +60,7 @@ const CARDS = [
   { id: 'darkin',        name: 'ダーキンの兆し',           image: 'card_icon/ダ―キンの兆し.png',                           type: 'support', cost: 2, exclusive: 'popeye', effect: { type: 'heal_draw', heal: 3, draw: 1 }, desc: 'HP 3回復＋カード1枚ドロー' },
   { id: 'roti_foxfire',  name: 'ろてぃのフォックスファイア', image: 'card_icon/ろてぃのフォックスファイア.png',             type: 'support', cost: 2, exclusive: 'roti',   effect: { type: 'add_foxfire', value: 3 }, desc: 'フォックスファイア×3を手札に加える' },
   { id: 'autumn_paradise', name: 'おーたむ茨の楽園',       image: 'card_icon/おーたむの茨の楽園.png',                      type: 'block',   cost: 2, block: 5, counter: 1, exclusive: 'autumn',              desc: 'ブロック 5　反撃1' },
+  { id: 'autumn_magic',   name: 'おーたむの防御魔法',     image: 'card_icon/おーたむの防御魔法.png',                      type: 'block',   cost: 1, block: 4, exclusive: 'autumn',                          desc: 'ブロック 4' },
   // Generated (not in deck)
   { id: 'foxfire',       name: 'フォックスファイア',       image: 'card_icon/フォックスファイア.png',                      type: 'attack',  cost: 0, atk: 1, lifesteal: true, generated: true,              desc: 'ATK 1　ライフスティール' },
 ];
@@ -303,7 +304,7 @@ const G = {
     const opponent = actor === this.player ? this.cpu : this.player;
     if (actor.leaderId === 'roti') {
       actor.rotiCardsPlayed++;
-      if (actor.rotiCardsPlayed % 3 === 0) {
+      if (actor.rotiCardsPlayed % 4 === 0) {
         opponent.hp = Math.max(0, opponent.hp - 2);
         this.addLog(`🦊 ろてぃリーダー効果：相手に2ダメージ！（${opponent.hp}/20）`);
         this._checkWin();
