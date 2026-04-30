@@ -28,6 +28,7 @@ const CARDS_S = [
   { id: 'monster',         type: 'attack',  cost: 3, atk: 5, lifesteal: true },
   { id: 'demacia',         type: 'attack',  cost: 2, atk: 3, effect: { type: 'pp',   value: 1 } },
   { id: 'dragon',          type: 'attack',  cost: 1, atk: 3, effect: { type: 'self_damage', value: 2 } },
+  { id: 'charm',           type: 'attack',  cost: 2, atk: 2, effect: { type: 'shield',      value: 2 } },
   { id: 'hamumu',          type: 'block',   cost: 2, block: 4 },
   { id: 'blockman',        type: 'block',   cost: 3, block: 7 },
   { id: 'cupid',           type: 'block',   cost: 2, block: 3, effect: { type: 'draw', value: 1 } },
@@ -132,7 +133,7 @@ function createPlayerState(leaderId) {
   return {
     hp: 20, hand: deck.splice(0, 4), deck, leaderId,
     pp: 3, attackPPSpent: 0, blockPP: 3,
-    attackZone: [], blockZone: [], supportZone: [],
+    attackZone: [], blockZone: [], supportZone: [], damageShield: 0,
     doubleNextAttack: false, doublePending: false,
     rotiCardsPlayed: 0, popeyeHealTotal: 0, popeyeAwake: false,
   };
@@ -193,6 +194,10 @@ function actionPlayAttack(gs, actorId, cardId) {
       addLog(gs, `💢 自身に${c.effect.value}ダメージ！（${actor.hp}/20）`);
       checkWin(gs);
     }
+    if (c.effect?.type === 'shield') {
+      actor.damageShield += c.effect.value;
+      addLog(gs, `🔮 シールド+${c.effect.value}`);
+    }
   } else {
     actor.supportZone.push(cardId);
     addLog(gs, `✨ ${cardId}を発動`);
@@ -240,6 +245,12 @@ function actionEndBlock(gs, blockerId) {
   addLog(gs, `⚡ ATK${totalAtk} vs BLK${totalBlk} → DMG${damage}`);
   gs.lastDamage = 0;
   gs.lastDamageTarget = null;
+  if (damage > 0 && blocker.damageShield > 0) {
+    const absorbed = Math.min(damage, blocker.damageShield);
+    damage -= absorbed;
+    blocker.damageShield = 0;
+    addLog(gs, `🔮 シールド発動！${absorbed}ダメージ軽減`);
+  }
   if (damage > 0) {
     blocker.hp = Math.max(0, blocker.hp - damage);
     addLog(gs, `💥 ${damage}ダメ！（${blocker.hp}/20）`);

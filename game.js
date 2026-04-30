@@ -39,6 +39,7 @@ const CARDS = [
   { id: 'monster',       name: '化け物',                   image: 'card_icon/化け物.webp',                                 type: 'attack',  cost: 3, atk: 5, lifesteal: true,                               desc: 'ATK 5　ライフスティール' },
   { id: 'demacia',       name: 'ﾃﾞﾏｰｼｱｱｱｱｱｱｱｱｱｱｱｱｱｱ',   image: 'card_icon/ﾃﾞﾏｰｼｱｱｱｱｱｱｱｱｱｱｱｱｱｱ.webp',              type: 'attack',  cost: 2, atk: 3, effect: { type: 'pp',   value: 1 },            desc: 'ATK 3　PP+1' },
   { id: 'dragon',        name: '空飛ぶドラゴン',           image: 'card_icon/空飛ぶドラゴン.png',                          type: 'attack',  cost: 1, atk: 3, effect: { type: 'self_damage', value: 2 },     desc: 'ATK 3　自分に2ダメージ' },
+  { id: 'charm',         name: 'チャーム',                 image: 'card_icon/チャーム.png',                                type: 'attack',  cost: 2, atk: 2, effect: { type: 'shield',      value: 2 },     desc: 'ATK 2　次に受けるダメージ-2' },
   // Block
   { id: 'hamumu',        name: 'ハムム',                   image: 'card_icon/ハムム.webp',                                 type: 'block',   cost: 2, block: 4,                                              desc: 'ブロック 4' },
   { id: 'blockman',      name: 'ブロックマン',             image: 'card_icon/ブロックマン.png',                            type: 'block',   cost: 3, block: 7,                                              desc: 'ブロック 7' },
@@ -113,6 +114,7 @@ function createPlayer(leaderId) {
     attackZone: [],
     blockZone: [],
     supportZone: [],
+    damageShield: 0,
     doubleNextAttack: false,
     doublePending: false,
     // leader counters
@@ -213,6 +215,10 @@ const G = {
         actor.hp = Math.max(0, actor.hp - c.effect.value);
         this.addLog(`💢 自身に${c.effect.value}ダメージ！（${actor.hp}/20）`);
         this._checkWin();
+      }
+      if (c.effect?.type === 'shield') {
+        actor.damageShield += c.effect.value;
+        this.addLog(`🔮 シールド+${c.effect.value}（次のダメージを軽減）`);
       }
     } else if (c.type === 'support') {
       actor.supportZone.push(cardId);
@@ -357,11 +363,17 @@ const G = {
     this.addLog(`⚡ アタック${totalAtk} vs ブロック${totalBlk} → ダメージ${damage}`);
 
     if (damage > 0) {
+      if (defender.damageShield > 0) {
+        const absorbed = Math.min(damage, defender.damageShield);
+        damage -= absorbed;
+        defender.damageShield = 0;
+        this.addLog(`🔮 シールド発動！${absorbed}ダメージ軽減`);
+      }
       defender.hp = Math.max(0, defender.hp - damage);
-      this.addLog(`💥 ${damage}ダメージ！（${defender.hp}/20）`);
+      if (damage > 0) this.addLog(`💥 ${damage}ダメージ！（${defender.hp}/20）`);
       // ダメージ演出
       const defWho = defender === this.player ? 'player' : 'cpu';
-      UI._showDamageAnimation(defWho, damage);
+      if (damage > 0) UI._showDamageAnimation(defWho, damage);
       const lsHeal = this._calcLifeStealHeal(attacker, damage);
       if (lsHeal > 0) this._applyHeal(attacker, lsHeal);
     }
@@ -486,15 +498,18 @@ const G = {
     if (this.cpu.hp <= 0 && this.player.hp <= 0) {
       this.winner = 'draw';
       this.phase = PHASE.GAME_OVER;
-      UI.showResult(null);
+      UI.render();
+      UI._showGameOverScreen(null);
     } else if (this.cpu.hp <= 0) {
       this.winner = 'player';
       this.phase = PHASE.GAME_OVER;
-      UI.showResult(true);
+      UI.render();
+      UI._showGameOverScreen(true);
     } else if (this.player.hp <= 0) {
       this.winner = 'cpu';
       this.phase = PHASE.GAME_OVER;
-      UI.showResult(false);
+      UI.render();
+      UI._showGameOverScreen(false);
     }
   },
 };
@@ -864,12 +879,27 @@ const UI = {
   },
 
   showResult(isWin) {
-    const title = isWin === null ? '引き分け' : isWin ? '🏆 WIN！' : '💀 LOSE...';
-    document.getElementById('result-title').textContent = title;
-    document.getElementById('result-msg').textContent = isWin
-      ? 'GFS-CARDGAMEでの勝利！'
-      : isWin === null ? 'お互いに全力を出し切った！' : 'またチャレンジしよう！';
-    this.show('result');
+    this._showGameOverScreen(isWin);
+  },
+
+  _showGameOverScreen(isWin) {
+    document.querySelectorAll('.gameover-screen').forEach(el => el.remove());
+    const titleClass = isWin === null ? 'gameover-draw' : isWin ? 'gameover-win' : 'gameover-lose';
+    const title = isWin === null ? 'DRAW...' : isWin ? 'YOU WIN!' : 'YOU LOSE...';
+    const overlay = document.createElement('div');
+    overlay.className = 'gameover-screen';
+    overlay.innerHTML = `
+      <div class="gameover-content">
+        <div class="gameover-title ${titleClass}">${title}</div>
+        <div class="gameover-btns">
+          <button class="btn btn-primary" id="go-retry">リーダー選択へ</button>
+          <button class="btn btn-secondary" id="go-menu">メニューへ</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#go-retry').onclick = () => { overlay.remove(); this.show('leader'); };
+    overlay.querySelector('#go-menu').onclick  = () => { overlay.remove(); this.show('menu'); };
   },
 };
 
@@ -935,7 +965,7 @@ const Online = {
         break;
 
       case 'game_over':
-        UI.showResult(msg.isWinner);
+        UI._showGameOverScreen(msg.isWinner);
         break;
 
       case 'opponent_disconnected':
