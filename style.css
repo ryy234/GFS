@@ -301,6 +301,7 @@ input[type="text"]:focus { outline: none; border-color: var(--accent); }
 }
 .zone-side-total.atk-total { color: var(--atk); border: 1px solid var(--atk); }
 .zone-side-total.blk-total { color: var(--blk); border: 1px solid var(--blk); }
+.zone-side-hidden { visibility: hidden; }
 
 /* 手札ラベル */
 .hand-label { font-size: .65rem; color: var(--dim); font-weight: 700; flex-shrink: 0; }

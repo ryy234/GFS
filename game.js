@@ -666,17 +666,36 @@ const UI = {
     document.getElementById('btn-end-attack').disabled = !isAttackPhase;
     document.getElementById('btn-end-block').disabled  = !isBlockPhase;
 
-    // ATK/BLK 合計表示（P1フェーズはプレイヤーが攻撃側）
-    const p1Phases = [PHASE.P1_ATTACK, PHASE.P2_BLOCK, PHASE.RESOLVE_P1];
-    const atkSide = p1Phases.includes(phase) ? p : c;
-    const blkSide = p1Phases.includes(phase) ? c : p;
-    const rawAtk  = atkSide.attackZone.reduce((s, id) => s + (CARD_MAP[id]?.atk || 0), 0);
-    const dispAtk = atkSide.doubleNextAttack ? rawAtk * 2 : rawAtk;
-    const dispBlk = blkSide.blockZone.reduce((s, id) => s + (CARD_MAP[id]?.block || 0), 0);
-    const atkEl = document.getElementById('atk-total-display');
-    const blkEl = document.getElementById('blk-total-display');
-    if (atkEl) atkEl.innerHTML = `ATK<br>${dispAtk}`;
-    if (blkEl) blkEl.innerHTML = `BLK<br>${dispBlk}`;
+    // 各ゾーン右サイドにATK/BLKを文脈表示
+    const cpuSide = document.getElementById('cpu-zone-side');
+    const plrSide = document.getElementById('player-zone-side');
+    if (cpuSide && plrSide) {
+      const showSide = (el, label, val, type) => {
+        el.className = `zone-side-total ${type}`;
+        el.innerHTML = `${label}<br>${val}`;
+      };
+      const hideSide = el => { el.className = 'zone-side-total zone-side-hidden'; el.innerHTML = ''; };
+      const pRawAtk = p.attackZone.reduce((s, id) => s + (CARD_MAP[id]?.atk || 0), 0);
+      const pAtk    = p.doubleNextAttack ? pRawAtk * 2 : pRawAtk;
+      const cRawAtk = c.attackZone.reduce((s, id) => s + (CARD_MAP[id]?.atk || 0), 0);
+      const cAtk    = c.doubleNextAttack ? cRawAtk * 2 : cRawAtk;
+      const pBlk    = p.blockZone.reduce((s, id) => s + (CARD_MAP[id]?.block || 0), 0);
+      const cBlk    = c.blockZone.reduce((s, id) => s + (CARD_MAP[id]?.block || 0), 0);
+      switch (phase) {
+        case PHASE.P1_ATTACK:
+          showSide(plrSide, 'ATK', pAtk, 'atk-total'); hideSide(cpuSide); break;
+        case PHASE.P2_BLOCK:
+        case PHASE.RESOLVE_P1:
+          showSide(plrSide, 'ATK', pAtk, 'atk-total'); showSide(cpuSide, 'BLK', cBlk, 'blk-total'); break;
+        case PHASE.P2_ATTACK:
+          showSide(cpuSide, 'ATK', cAtk, 'atk-total'); hideSide(plrSide); break;
+        case PHASE.P1_BLOCK:
+        case PHASE.RESOLVE_P2:
+          showSide(cpuSide, 'ATK', cAtk, 'atk-total'); showSide(plrSide, 'BLK', pBlk, 'blk-total'); break;
+        default:
+          hideSide(cpuSide); hideSide(plrSide);
+      }
+    }
 
     const logEl = document.getElementById('battle-log');
     logEl.innerHTML = G.log.map(l => `<div class="log-line">${l}</div>`).join('');
@@ -966,17 +985,32 @@ const Online = {
     // 相手手札（裏向き）
     UI._renderCpuHand(state.opHandCount ?? 0);
 
-    // ATK/BLK 合計表示
-    const p1IsAttacker = ['p1_attack', 'p2_block', 'resolve_p1'].includes(state.phase);
-    const iAmAttacker  = (p1IsAttacker && this.playerId === 'p1') || (!p1IsAttacker && this.playerId === 'p2');
-    const onAtkZone = iAmAttacker ? state.myAttackZone : state.opAttackZone;
-    const onBlkZone = iAmAttacker ? state.opBlockZone  : state.myBlockZone;
-    const onDispAtk = (onAtkZone || []).reduce((s, id) => s + (CARD_MAP[id]?.atk || 0), 0);
-    const onDispBlk = (onBlkZone || []).reduce((s, id) => s + (CARD_MAP[id]?.block || 0), 0);
-    const onAtkEl = document.getElementById('atk-total-display');
-    const onBlkEl = document.getElementById('blk-total-display');
-    if (onAtkEl) onAtkEl.innerHTML = `ATK<br>${onDispAtk}`;
-    if (onBlkEl) onBlkEl.innerHTML = `BLK<br>${onDispBlk}`;
+    // 各ゾーン右サイドにATK/BLKを文脈表示（オンライン）
+    {
+      const cpuSide = document.getElementById('cpu-zone-side');
+      const plrSide = document.getElementById('player-zone-side');
+      if (cpuSide && plrSide) {
+        const showSide = (el, label, val, type) => {
+          el.className = `zone-side-total ${type}`;
+          el.innerHTML = `${label}<br>${val}`;
+        };
+        const hideSide = el => { el.className = 'zone-side-total zone-side-hidden'; el.innerHTML = ''; };
+        const myAtk = (state.myAttackZone||[]).reduce((s,id) => s+(CARD_MAP[id]?.atk||0), 0);
+        const opAtk = (state.opAttackZone||[]).reduce((s,id) => s+(CARD_MAP[id]?.atk||0), 0);
+        const myBlk = (state.myBlockZone||[]).reduce((s,id) => s+(CARD_MAP[id]?.block||0), 0);
+        const opBlk = (state.opBlockZone||[]).reduce((s,id) => s+(CARD_MAP[id]?.block||0), 0);
+        const p1Atk = ['p1_attack','p2_block','resolve_p1'].includes(state.phase);
+        const iAmAtk = (p1Atk && this.playerId==='p1') || (!p1Atk && this.playerId==='p2');
+        const isBlkPhase = ['p2_block','resolve_p1','p1_block','resolve_p2'].includes(state.phase);
+        if (iAmAtk) {
+          showSide(plrSide, 'ATK', myAtk, 'atk-total');
+          isBlkPhase ? showSide(cpuSide, 'BLK', opBlk, 'blk-total') : hideSide(cpuSide);
+        } else {
+          showSide(cpuSide, 'ATK', opAtk, 'atk-total');
+          isBlkPhase ? showSide(plrSide, 'BLK', myBlk, 'blk-total') : hideSide(plrSide);
+        }
+      }
+    }
 
     // 専用カード演出
     if (state.lastExclusiveCard) {
