@@ -358,7 +358,7 @@ const G = {
   _resolveAttack(attacker, defender) {
     const totalAtk = this._calcTotalAtk(attacker);
     const totalBlk = this._calcTotalBlk(defender);
-    const damage = Math.max(0, totalAtk - totalBlk);
+    let damage = Math.max(0, totalAtk - totalBlk);
 
     this.addLog(`⚡ アタック${totalAtk} vs ブロック${totalBlk} → ダメージ${damage}`);
 
