@@ -277,20 +277,30 @@ input[type="text"]:focus { outline: none; border-color: var(--accent); }
 #round-display  { font-size: .62rem; color: var(--dim); }
 .ctrl-buttons { display: flex; gap: 6px; flex-shrink: 0; }
 
-/* ATK/BLK 合計専用バー */
-.battle-totals-bar {
+/* ATK/BLK ゾーン右サイド表示 */
+.zone-row {
   display: flex;
-  justify-content: center;
-  gap: 20px;
-  padding: 3px 8px;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  gap: 4px;
   flex-shrink: 0;
 }
-.battle-total { font-size: .9rem; font-weight: 900; letter-spacing: 1px; }
-.atk-total { color: var(--atk); }
-.blk-total { color: var(--blk); }
+.zone-row .zone { flex: 1; min-width: 0; }
+.zone-side-total {
+  flex-shrink: 0;
+  width: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg2);
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.4;
+  text-align: center;
+  letter-spacing: .5px;
+}
+.zone-side-total.atk-total { color: var(--atk); border: 1px solid var(--atk); }
+.zone-side-total.blk-total { color: var(--blk); border: 1px solid var(--blk); }
 
 /* 手札ラベル */
 .hand-label { font-size: .65rem; color: var(--dim); font-weight: 700; flex-shrink: 0; }

@@ -656,8 +656,8 @@ const UI = {
     const dispBlk = blkSide.blockZone.reduce((s, id) => s + (CARD_MAP[id]?.block || 0), 0);
     const atkEl = document.getElementById('atk-total-display');
     const blkEl = document.getElementById('blk-total-display');
-    if (atkEl) atkEl.textContent = `ATK: ${dispAtk}`;
-    if (blkEl) blkEl.textContent = `BLK: ${dispBlk}`;
+    if (atkEl) atkEl.innerHTML = `ATK<br>${dispAtk}`;
+    if (blkEl) blkEl.innerHTML = `BLK<br>${dispBlk}`;
 
     const logEl = document.getElementById('battle-log');
     logEl.innerHTML = G.log.map(l => `<div class="log-line">${l}</div>`).join('');
@@ -676,7 +676,7 @@ const UI = {
     if (leaderId === 'popeye') {
       badge = awake
         ? '<div class="awake-badge">覚醒</div>'
-        : `<div class="awake-badge popeye-progress">覚醒まで${healTotal}</div>`;
+        : `<div class="awake-badge popeye-progress">覚醒まで${Math.max(0, 12 - healTotal)}</div>`;
     } else if (awake) {
       badge = '<div class="awake-badge">覚醒</div>';
     }
@@ -950,8 +950,8 @@ const Online = {
     const onDispBlk = (onBlkZone || []).reduce((s, id) => s + (CARD_MAP[id]?.block || 0), 0);
     const onAtkEl = document.getElementById('atk-total-display');
     const onBlkEl = document.getElementById('blk-total-display');
-    if (onAtkEl) onAtkEl.textContent = `ATK: ${onDispAtk}`;
-    if (onBlkEl) onBlkEl.textContent = `BLK: ${onDispBlk}`;
+    if (onAtkEl) onAtkEl.innerHTML = `ATK<br>${onDispAtk}`;
+    if (onBlkEl) onBlkEl.innerHTML = `BLK<br>${onDispBlk}`;
 
     // 専用カード演出
     if (state.lastExclusiveCard) {
