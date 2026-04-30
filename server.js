@@ -271,6 +271,7 @@ function buildState(gs, myId) {
     myAttackZone: me.attackZone, myBlockZone: me.blockZone, mySupportZone: me.supportZone,
     myPopeyeAwake: me.popeyeAwake, myPopeyeHealTotal: me.popeyeHealTotal,
     opHp: opp.hp, opHandCount: opp.hand.length, opLeader: opp.leaderId,
+    opPP: opp.pp, opBlockPP: opp.blockPP,
     opAttackZone: opp.attackZone, opBlockZone: opp.blockZone, opSupportZone: opp.supportZone,
     opPopeyeAwake: opp.popeyeAwake, opPopeyeHealTotal: opp.popeyeHealTotal,
     phase: gs.phase, isMyTurn, isAttacking, isBlocking,

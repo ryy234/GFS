@@ -934,8 +934,12 @@ const Online = {
   _render(state) {
     // リーダーブロック（HP + PP 統合）
     const ppVal = state.isAttacking ? state.myPP : state.isBlocking ? state.myBlockPP : 0;
+    // 相手がブロック中かどうかでblockPPとppを切り替え
+    const opIsBlocking = (state.phase === 'p2_block' && this.playerId === 'p1') ||
+                         (state.phase === 'p1_block' && this.playerId === 'p2');
+    const opPPVal = opIsBlocking ? (state.opBlockPP || 0) : (state.opPP || 0);
     UI._renderLeaderBlock('player-leader-block', state.myLeader, state.myPopeyeAwake, state.myHp, ppVal, state.myPopeyeHealTotal);
-    UI._renderLeaderBlock('cpu-leader-block',    state.opLeader, state.opPopeyeAwake, state.opHp, 0, state.opPopeyeHealTotal);
+    UI._renderLeaderBlock('cpu-leader-block',    state.opLeader, state.opPopeyeAwake, state.opHp, opPPVal, state.opPopeyeHealTotal);
 
     // フェーズ
     const phaseLabel = {
