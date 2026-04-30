@@ -29,6 +29,7 @@ const CARDS_S = [
   { id: 'demacia',         type: 'attack',  cost: 2, atk: 3, effect: { type: 'pp',   value: 1 } },
   { id: 'dragon',          type: 'attack',  cost: 1, atk: 3, effect: { type: 'self_damage', value: 2 } },
   { id: 'charm',           type: 'attack',  cost: 2, atk: 2, effect: { type: 'shield',      value: 2 } },
+  { id: 'gaki',            type: 'attack',  cost: 2, atk: 4 },
   { id: 'hamumu',          type: 'block',   cost: 2, block: 4 },
   { id: 'blockman',        type: 'block',   cost: 3, block: 7 },
   { id: 'cupid',           type: 'block',   cost: 2, block: 3, effect: { type: 'draw', value: 1 } },
@@ -70,7 +71,7 @@ function createDeck(leaderId) {
 }
 
 function drawCard(p) {
-  if (p.deck.length > 0 && p.hand.length < 7) p.hand.push(p.deck.pop());
+  if (p.deck.length > 0 && p.hand.length < 8) p.hand.push(p.deck.pop());
 }
 
 function drawCards(p, n) {

@@ -40,6 +40,7 @@ const CARDS = [
   { id: 'demacia',       name: 'ﾃﾞﾏｰｼｱｱｱｱｱｱｱｱｱｱｱｱｱｱ',   image: 'card_icon/ﾃﾞﾏｰｼｱｱｱｱｱｱｱｱｱｱｱｱｱｱ.webp',              type: 'attack',  cost: 2, atk: 3, effect: { type: 'pp',   value: 1 },            desc: 'ATK 3　PP+1' },
   { id: 'dragon',        name: '空飛ぶドラゴン',           image: 'card_icon/空飛ぶドラゴン.png',                          type: 'attack',  cost: 1, atk: 3, effect: { type: 'self_damage', value: 2 },     desc: 'ATK 3　自分に2ダメージ' },
   { id: 'charm',         name: 'チャーム',                 image: 'card_icon/チャーム.png',                                type: 'attack',  cost: 2, atk: 2, effect: { type: 'shield',      value: 2 },     desc: 'ATK 2　次に受けるダメージ-2' },
+  { id: 'gaki',          name: 'ガキ大将の歌',             image: 'card_icon/ガキ大将の歌.png',                            type: 'attack',  cost: 2, atk: 4,                                                desc: 'ATK 4' },
   // Block
   { id: 'hamumu',        name: 'ハムム',                   image: 'card_icon/ハムム.webp',                                 type: 'block',   cost: 2, block: 4,                                              desc: 'ブロック 4' },
   { id: 'blockman',      name: 'ブロックマン',             image: 'card_icon/ブロックマン.png',                            type: 'block',   cost: 3, block: 7,                                              desc: 'ブロック 7' },
@@ -157,7 +158,7 @@ const G = {
   },
 
   _drawCard(p) {
-    if (p.deck.length > 0 && p.hand.length < 7) {
+    if (p.deck.length > 0 && p.hand.length < 8) {
       p.hand.push(p.deck.pop());
     }
   },
@@ -289,7 +290,7 @@ const G = {
   _applyDraw(actor, count) {
     let drawn = 0;
     for (let i = 0; i < count; i++) {
-      if (actor.deck.length > 0 && actor.hand.length < 7) {
+      if (actor.deck.length > 0 && actor.hand.length < 8) {
         actor.hand.push(actor.deck.pop());
         drawn++;
       }
@@ -554,9 +555,24 @@ const UI = {
     const grid = document.getElementById('cardlist-grid');
     if (!grid) return;
     grid.innerHTML = '';
-    CARDS.filter(c => !c.generated).forEach(card => {
+    const typeOrder = { attack: 0, block: 1, support: 2 };
+    const sorted = [...CARDS].sort((a, b) => {
+      // 1. 一般カード先、専用カード後（生成カードは最後）
+      const aEx = a.generated ? 2 : a.exclusive ? 1 : 0;
+      const bEx = b.generated ? 2 : b.exclusive ? 1 : 0;
+      if (aEx !== bEx) return aEx - bEx;
+      // 2. カード種類：アタック→ブロック→サポート
+      const at = typeOrder[a.type] ?? 3, bt = typeOrder[b.type] ?? 3;
+      if (at !== bt) return at - bt;
+      // 3. コスト順（昇順）
+      if (a.cost !== b.cost) return a.cost - b.cost;
+      // 4. 効果なし先、効果あり後
+      const aEff = a.effect || a.lifesteal || a.counter ? 1 : 0;
+      const bEff = b.effect || b.lifesteal || b.counter ? 1 : 0;
+      return aEff - bEff;
+    });
+    sorted.forEach(card => {
       const el = this._makeCard(card, card.cost, false);
-      // 暗くならないようdisabledを外してpreviewクラスにする
       el.classList.remove('disabled');
       el.classList.add('preview');
       el.onclick = () => this.showCardDetail(card);
