@@ -33,28 +33,33 @@ const CARDS = [
   { id: 'abandoned_dog', name: '捨てられた犬',             image: 'card_icon/捨てられた犬.webp',                           type: 'attack',  cost: 1, atk: 2,                                                desc: 'ATK 2' },
   { id: 'bite',          name: '噛みつく',                 image: 'card_icon/噛みつく.webp',                               type: 'attack',  cost: 1, atk: 1, lifesteal: true,                               desc: 'ATK 1　ライフスティール' },
   { id: 'kopuemon',      name: 'こぷえもん',               image: 'card_icon/こぷえもん.webp',                             type: 'attack',  cost: 2, atk: 3, lifesteal: true,                               desc: 'ATK 3　ライフスティール' },
-  { id: 'kirby',         name: '星のコービィ',             image: 'card_icon/星のコービィ.jpg',                           type: 'attack',  cost: 2, atk: 3, effect: { type: 'draw', value: 1 },            desc: 'ATK 3　カード1枚ドロー' },
+  { id: 'kirby',         name: '星のコービィ',             image: 'card_icon/星のコービィ.jpg',                            type: 'attack',  cost: 2, atk: 3, effect: { type: 'draw', value: 1 },            desc: 'ATK 3　カード1枚ドロー' },
   { id: 'running_koup',  name: '走るこうぷ',               image: 'card_icon/走るこうぷ.webp',                             type: 'attack',  cost: 1, atk: 1, effect: { type: 'pp',   value: 1 },            desc: 'ATK 1　PP+1' },
   { id: 'sion',          name: 'サイオンGFSフォルム',      image: 'card_icon/サイオンGFSフォルム.webp',                    type: 'attack',  cost: 3, atk: 7,                                                desc: 'ATK 7' },
   { id: 'monster',       name: '化け物',                   image: 'card_icon/化け物.webp',                                 type: 'attack',  cost: 3, atk: 5, lifesteal: true,                               desc: 'ATK 5　ライフスティール' },
   { id: 'demacia',       name: 'ﾃﾞﾏｰｼｱｱｱｱｱｱｱｱｱｱｱｱｱｱ',   image: 'card_icon/ﾃﾞﾏｰｼｱｱｱｱｱｱｱｱｱｱｱｱｱｱ.webp',              type: 'attack',  cost: 2, atk: 3, effect: { type: 'pp',   value: 1 },            desc: 'ATK 3　PP+1' },
+  { id: 'dragon',        name: '空飛ぶドラゴン',           image: 'card_icon/空飛ぶドラゴン.png',                          type: 'attack',  cost: 1, atk: 3, effect: { type: 'self_damage', value: 2 },     desc: 'ATK 3　自分に2ダメージ' },
   // Block
   { id: 'hamumu',        name: 'ハムム',                   image: 'card_icon/ハムム.webp',                                 type: 'block',   cost: 2, block: 4,                                              desc: 'ブロック 4' },
-  { id: 'blockman',     name: 'ブロックマン',              image: 'card_icon/ブロックマン.png',                             type: 'block',   cost: 3, block: 7,                                              desc: 'ブロック 7' },
+  { id: 'blockman',      name: 'ブロックマン',             image: 'card_icon/ブロックマン.png',                            type: 'block',   cost: 3, block: 7,                                              desc: 'ブロック 7' },
   { id: 'cupid',         name: '恋のキュービット',         image: 'card_icon/恋のキュービット.webp',                       type: 'block',   cost: 2, block: 3, effect: { type: 'draw', value: 1 },         desc: 'ブロック 3　カード1枚ドロー' },
-  { id: 'hey_guys',      name: 'hey,guys!',                image: 'card_icon/hey,guys.webp',                               type: 'block',   cost: 1, block: 2, effect: { type: 'heal', value: 1 },         desc: 'ブロック 2　HP+1回復' },
+  { id: 'hey_guys',      name: 'hey,guys!',                image: 'card_icon/hey,guys.webp',                               type: 'block',   cost: 1, block: 2,                                              desc: 'ブロック 2' },
+  { id: 'suikaba',       name: 'スイカバー',               image: 'card_icon/スイカバー.png',                              type: 'block',   cost: 1, block: 1, effect: { type: 'heal', value: 1 },         desc: 'ブロック 1　HP+1回復' },
+  { id: 'medama',        name: '目の玉星人',               image: 'card_icon/目の玉星人.png',                              type: 'block',   cost: 2, block: 3, atk: 2, dual: true,                          desc: 'ブロック 3　ATK 2としても使用可' },
+  { id: 'neko',          name: '背を測るネコ',             image: 'card_icon/背を測るネコ.png',                            type: 'block',   cost: 1, block: 2,                                              desc: 'ブロック 2' },
+  { id: 'myakuyu',       name: '笑うミャクナユ',           image: 'card_icon/笑うミャクナユ.png',                          type: 'block',   cost: 2, block: 1, effect: { type: 'heal', value: 3 },         desc: 'ブロック 1　HP 3回復' },
   // Support
   { id: 'ton_tears',     name: 'とんの涙',                 image: 'card_icon/とんの涙.webp',                               type: 'support', cost: 1, effect: { type: 'heal', value: 2 },                   desc: 'HP 2回復' },
-  { id: 'album1',        name: 'うさぎの涙',        image: 'card_icon/album_2025-04-29_02-41-49.gif',               type: 'support', cost: 2, effect: { type: 'heal', value: 4 },                   desc: 'HP 4回復' },
-  { id: 'album2',        name: 'コーヒーカップ',        image: 'card_icon/album_2025-05-18_02-53-31.gif',               type: 'support', cost: 3, effect: { type: 'double_atk' },                       desc: '次のターンのアタックを2倍' },
-  { id: 'mystery',       name: 'GFSの魔人',               image: 'card_icon/ランプの魔人.webp',          type: 'support', cost: 1, effect: { type: 'draw', value: 2 },                   desc: 'カード2枚ドロー' },
-  { id: 'mari_tanuki',  name: 'マリのたぬき',              image: 'card_icon/マリのたぬき.jpg',             type: 'support', cost: 2, effect: { type: 'heal_draw', heal: 1, draw: 3 },         desc: 'カード3枚ドロー＋HP1回復' },
+  { id: 'album2',        name: 'コーヒーカップ',           image: 'card_icon/album_2025-05-18_02-53-31.gif',               type: 'support', cost: 3, effect: { type: 'double_atk' },                       desc: '次のターンのアタックを1.5倍（切り捨て）' },
+  { id: 'mystery',       name: 'GFSの魔人',               image: 'card_icon/ランプの魔人.webp',                           type: 'support', cost: 1, effect: { type: 'draw', value: 2 },                   desc: 'カード2枚ドロー' },
+  { id: 'mari_tanuki',   name: 'マリのたぬき',             image: 'card_icon/マリのたぬき.jpg',                            type: 'support', cost: 2, effect: { type: 'heal_draw', heal: 1, draw: 3 },      desc: 'カード3枚ドロー＋HP1回復' },
+  { id: 'smite',         name: 'スマイトマン',             image: 'card_icon/スマイトマン.png',                            type: 'support', cost: 2, effect: { type: 'damage_opp', value: 2 },             desc: '相手に2ダメージ' },
   // Leader Exclusive
-  { id: 'darkin',        name: 'ダーキンの兆し',          image: 'card_icon/ダ―キンの兆し.png',                               type: 'support', cost: 2, exclusive: 'popeye', effect: { type: 'heal_draw', heal: 3, draw: 1 }, desc: 'HP 3回復＋カード1枚ドロー' },
-  { id: 'roti_foxfire',  name: 'ろてぃのフォックスファイア',  image: 'card_icon/ろてぃのフォックスファイア.png',              type: 'support', cost: 1, exclusive: 'roti',    effect: { type: 'add_foxfire', value: 3 }, desc: 'フォックスファイア×3を手札に加える' },
-  { id: 'autumn_paradise', name: 'おーたむ茨の楽園',    image: 'card_icon/おーたむの茨の楽園.png',                      type: 'block',   cost: 2, block: 5, counter: 1, exclusive: 'autumn',              desc: 'ブロック 5　反撃1' },
+  { id: 'darkin',        name: 'ダーキンの兆し',           image: 'card_icon/ダ―キンの兆し.png',                           type: 'support', cost: 2, exclusive: 'popeye', effect: { type: 'heal_draw', heal: 3, draw: 1 }, desc: 'HP 3回復＋カード1枚ドロー' },
+  { id: 'roti_foxfire',  name: 'ろてぃのフォックスファイア', image: 'card_icon/ろてぃのフォックスファイア.png',             type: 'support', cost: 2, exclusive: 'roti',   effect: { type: 'add_foxfire', value: 3 }, desc: 'フォックスファイア×3を手札に加える' },
+  { id: 'autumn_paradise', name: 'おーたむ茨の楽園',       image: 'card_icon/おーたむの茨の楽園.png',                      type: 'block',   cost: 2, block: 5, counter: 1, exclusive: 'autumn',              desc: 'ブロック 5　反撃1' },
   // Generated (not in deck)
-  { id: 'foxfire',       name: 'フォックスファイア',       image: 'card_icon/フォックスファイア.png',                                 type: 'attack',  cost: 0, atk: 1, lifesteal: true, generated: true,              desc: 'ATK 1　ライフスティール' },
+  { id: 'foxfire',       name: 'フォックスファイア',       image: 'card_icon/フォックスファイア.png',                      type: 'attack',  cost: 0, atk: 1, lifesteal: true, generated: true,              desc: 'ATK 1　ライフスティール' },
 ];
 
 const CARD_MAP  = Object.fromEntries(CARDS.map(c => [c.id, c]));
@@ -188,7 +193,7 @@ const G = {
     const c = CARD_MAP[cardId];
     if (!c) return false;
     if (!actor.hand.includes(cardId)) return false;
-    if (phase === 'attack_phase' && c.type === 'block') {
+    if (phase === 'attack_phase' && c.type === 'block' && !c.dual) {
       this.addLog('⚠️ アタックフェーズではブロックカードは出せない');
       return false;
     }
@@ -198,11 +203,17 @@ const G = {
     actor.attackPPSpent += c.cost;
     actor.hand.splice(actor.hand.indexOf(cardId), 1);
 
-    if (c.type === 'attack') {
+    if (c.type === 'attack' || (c.dual && phase === 'attack_phase')) {
       actor.attackZone.push(cardId);
-      this.addLog(`⚔️ ${c.name}（ATK ${c.atk}）を出した`);
+      const atkVal = c.atk || 0;
+      this.addLog(`⚔️ ${c.name}（ATK ${atkVal}）を出した`);
       if (c.effect?.type === 'draw') this._applyDraw(actor, c.effect.value);
       if (c.effect?.type === 'pp')   { actor.pp = Math.min(3, actor.pp + c.effect.value); this.addLog(`💎 PP+${c.effect.value}`); }
+      if (c.effect?.type === 'self_damage') {
+        actor.hp = Math.max(0, actor.hp - c.effect.value);
+        this.addLog(`💢 自身に${c.effect.value}ダメージ！（${actor.hp}/20）`);
+        this._checkWin();
+      }
     } else if (c.type === 'support') {
       actor.supportZone.push(cardId);
       this.addLog(`✨ ${c.name}を発動`);
@@ -233,7 +244,12 @@ const G = {
         break;
       case 'double_atk':
         actor.doublePending = true;
-        this.addLog(`⬆️ 次ターンのアタック2倍！`);
+        this.addLog(`⬆️ 次ターンのアタック1.5倍！`);
+        break;
+      case 'damage_opp':
+        _target.hp = Math.max(0, _target.hp - eff.value);
+        this.addLog(`⚡ 相手に${eff.value}ダメージ！（${_target.hp}/20）`);
+        this._checkWin();
         break;
       case 'add_foxfire':
         for (let i = 0; i < eff.value; i++) actor.hand.push('foxfire');
@@ -394,7 +410,7 @@ const G = {
 
   _calcTotalAtk(actor) {
     let total = actor.attackZone.reduce((s, id) => s + (CARD_MAP[id]?.atk || 0), 0);
-    if (actor.doubleNextAttack) total *= 2;
+    if (actor.doubleNextAttack) total = Math.floor(total * 1.5);
     return total;
   },
 
@@ -676,9 +692,9 @@ const UI = {
       };
       const hideSide = el => { el.className = 'zone-side-total zone-side-hidden'; el.innerHTML = ''; };
       const pRawAtk = p.attackZone.reduce((s, id) => s + (CARD_MAP[id]?.atk || 0), 0);
-      const pAtk    = p.doubleNextAttack ? pRawAtk * 2 : pRawAtk;
+      const pAtk    = p.doubleNextAttack ? Math.floor(pRawAtk * 1.5) : pRawAtk;
       const cRawAtk = c.attackZone.reduce((s, id) => s + (CARD_MAP[id]?.atk || 0), 0);
-      const cAtk    = c.doubleNextAttack ? cRawAtk * 2 : cRawAtk;
+      const cAtk    = c.doubleNextAttack ? Math.floor(cRawAtk * 1.5) : cRawAtk;
       const pBlk    = p.blockZone.reduce((s, id) => s + (CARD_MAP[id]?.block || 0), 0);
       const cBlk    = c.blockZone.reduce((s, id) => s + (CARD_MAP[id]?.block || 0), 0);
       switch (phase) {
@@ -795,7 +811,7 @@ const UI = {
       if (!card) return;
 
       let canPlay = false;
-      if (isAttackPhase && card.type !== 'block' && card.cost <= p.pp) canPlay = true;
+      if (isAttackPhase && (card.type !== 'block' || card.dual) && card.cost <= p.pp) canPlay = true;
       if (isBlockPhase  && card.type === 'block' && card.cost <= p.blockPP) canPlay = true;
 
       const el2 = this._makeCard(card, card.cost, canPlay);
@@ -814,7 +830,9 @@ const UI = {
     el.className = `card ${playable ? 'playable' : 'disabled'}`;
     el.style.setProperty('--card-color', TYPE_COLOR[card.type] || '#555');
 
-    const statLine = card.type === 'attack'
+    const statLine = card.dual
+      ? `BLK ${card.block} / ATK ${card.atk}`
+      : card.type === 'attack'
       ? `ATK ${card.atk}`
       : card.type === 'block'
       ? `BLK ${card.block}${card.counter ? ' 反撃' + card.counter : ''}`
@@ -974,7 +992,7 @@ const Online = {
       if (!card) return;
       const cost = card.cost;
       const canPlay = state.isMyTurn &&
-        ((state.isAttacking && card.type !== 'block' && state.myPP >= cost) ||
+        ((state.isAttacking && (card.type !== 'block' || card.dual) && state.myPP >= cost) ||
          (state.isBlocking  && card.type === 'block' && state.myBlockPP >= cost));
       const el = UI._makeCard(card, cost, canPlay);
       if (canPlay) {

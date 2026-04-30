@@ -27,17 +27,22 @@ const CARDS_S = [
   { id: 'sion',            type: 'attack',  cost: 3, atk: 7 },
   { id: 'monster',         type: 'attack',  cost: 3, atk: 5, lifesteal: true },
   { id: 'demacia',         type: 'attack',  cost: 2, atk: 3, effect: { type: 'pp',   value: 1 } },
+  { id: 'dragon',          type: 'attack',  cost: 1, atk: 3, effect: { type: 'self_damage', value: 2 } },
   { id: 'hamumu',          type: 'block',   cost: 2, block: 4 },
   { id: 'blockman',        type: 'block',   cost: 3, block: 7 },
-  { id: 'mari_tanuki',     type: 'support', cost: 2, effect: { type: 'heal_draw', heal: 1, draw: 3 } },
   { id: 'cupid',           type: 'block',   cost: 2, block: 3, effect: { type: 'draw', value: 1 } },
-  { id: 'hey_guys',        type: 'block',   cost: 1, block: 2, effect: { type: 'heal', value: 1 } },
+  { id: 'hey_guys',        type: 'block',   cost: 1, block: 2 },
+  { id: 'suikaba',         type: 'block',   cost: 1, block: 1, effect: { type: 'heal', value: 1 } },
+  { id: 'medama',          type: 'block',   cost: 2, block: 3, atk: 2, dual: true },
+  { id: 'neko',            type: 'block',   cost: 1, block: 2 },
+  { id: 'myakuyu',         type: 'block',   cost: 2, block: 1, effect: { type: 'heal', value: 3 } },
   { id: 'ton_tears',       type: 'support', cost: 1, effect: { type: 'heal', value: 2 } },
-  { id: 'album1',          type: 'support', cost: 2, effect: { type: 'heal', value: 4 } },
   { id: 'album2',          type: 'support', cost: 3, effect: { type: 'double_atk' } },
   { id: 'mystery',         type: 'support', cost: 1, effect: { type: 'draw', value: 2 } },
+  { id: 'mari_tanuki',     type: 'support', cost: 2, effect: { type: 'heal_draw', heal: 1, draw: 3 } },
+  { id: 'smite',           type: 'support', cost: 2, effect: { type: 'damage_opp', value: 2 } },
   { id: 'darkin',          type: 'support', cost: 2, exclusive: 'popeye', effect: { type: 'heal_draw', heal: 3, draw: 1 } },
-  { id: 'roti_foxfire',    type: 'support', cost: 1, exclusive: 'roti',   effect: { type: 'add_foxfire', value: 3 } },
+  { id: 'roti_foxfire',    type: 'support', cost: 2, exclusive: 'roti',   effect: { type: 'add_foxfire', value: 3 } },
   { id: 'autumn_paradise', type: 'block',   cost: 2, block: 5, counter: 1, exclusive: 'autumn' },
   { id: 'foxfire',         type: 'attack',  cost: 0, atk: 1, lifesteal: true, generated: true },
 ];
@@ -149,11 +154,18 @@ function createGame(p1Leader, p2Leader) {
 function applySupport(gs, actor, c) {
   const eff = c.effect;
   if (!eff) return;
+  const oppId = gs.players.p1 === actor ? 'p2' : 'p1';
+  const opp = gs.players[oppId];
   switch (eff.type) {
     case 'heal':       applyHeal(gs, actor, eff.value); break;
     case 'draw':       drawCards(actor, eff.value); break;
     case 'pp':         actor.pp = Math.min(3, actor.pp + eff.value); addLog(gs, `💎 PP+${eff.value}`); break;
-    case 'double_atk': actor.doublePending = true; addLog(gs, `⬆️ 次ターンのアタック2倍！`); break;
+    case 'double_atk': actor.doublePending = true; addLog(gs, `⬆️ 次ターンのアタック1.5倍！`); break;
+    case 'damage_opp':
+      opp.hp = Math.max(0, opp.hp - eff.value);
+      addLog(gs, `⚡ 相手に${eff.value}ダメージ！（${opp.hp}/20）`);
+      checkWin(gs);
+      break;
     case 'heal_draw':  applyHeal(gs, actor, eff.heal); drawCards(actor, eff.draw); break;
     case 'add_foxfire':
       for (let i = 0; i < eff.value; i++) actor.hand.push('foxfire');
@@ -167,15 +179,20 @@ function actionPlayAttack(gs, actorId, cardId) {
   const c = CMAP[cardId];
   if (!c) return 'invalid card';
   if (!actor.hand.includes(cardId)) return 'not in hand';
-  if (c.type === 'block') return 'block card in attack phase';
+  if (c.type === 'block' && !c.dual) return 'block card in attack phase';
   if (actor.pp < c.cost) return 'not enough PP';
   actor.pp -= c.cost; actor.attackPPSpent += c.cost;
   actor.hand.splice(actor.hand.indexOf(cardId), 1);
-  if (c.type === 'attack') {
+  if (c.type === 'attack' || c.dual) {
     actor.attackZone.push(cardId);
     addLog(gs, `⚔️ ${cardId}（ATK ${c.atk}）を出した`);
     if (c.effect?.type === 'draw') drawCards(actor, c.effect.value);
     if (c.effect?.type === 'pp') { actor.pp = Math.min(3, actor.pp + c.effect.value); addLog(gs, `💎 PP+${c.effect.value}`); }
+    if (c.effect?.type === 'self_damage') {
+      actor.hp = Math.max(0, actor.hp - c.effect.value);
+      addLog(gs, `💢 自身に${c.effect.value}ダメージ！（${actor.hp}/20）`);
+      checkWin(gs);
+    }
   } else {
     actor.supportZone.push(cardId);
     addLog(gs, `✨ ${cardId}を発動`);
@@ -217,7 +234,7 @@ function actionEndBlock(gs, blockerId) {
   const attackerId = blockerId === 'p1' ? 'p2' : 'p1';
   const blocker = gs.players[blockerId], attacker = gs.players[attackerId];
   const rawTotal = attacker.attackZone.reduce((s, id) => s + (CMAP[id]?.atk || 0), 0);
-  const totalAtk = attacker.doubleNextAttack ? rawTotal * 2 : rawTotal;
+  const totalAtk = attacker.doubleNextAttack ? Math.floor(rawTotal * 1.5) : rawTotal;
   const totalBlk = blocker.blockZone.reduce((s, id) => s + (CMAP[id]?.block || 0), 0);
   const damage = Math.max(0, totalAtk - totalBlk);
   addLog(gs, `⚡ ATK${totalAtk} vs BLK${totalBlk} → DMG${damage}`);
