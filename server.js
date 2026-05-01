@@ -92,6 +92,7 @@ function applyHeal(gs, p, amount) {
       if (p.popeyeHealTotal >= 12) {
         p.popeyeAwake = true;
         addLog(gs, `⭐ スーパーポパイ覚醒！全アタックにLS！`);
+        gs.lastPopeyeAwoke = true;
       }
     }
   }
@@ -118,6 +119,8 @@ function leaderOnCard(gs, actor, opponent) {
     if (actor.rotiCardsPlayed % 4 === 0) {
       opponent.hp = Math.max(0, opponent.hp - 2);
       addLog(gs, `🦊 ろてぃ効果：2ダメ！（${opponent.hp}/20）`);
+      gs.lastLeaderDamage = 2;
+      gs.lastLeaderDamageTarget = gs.players.p1 === opponent ? 'p1' : 'p2';
       checkWin(gs);
     }
   }
@@ -266,9 +269,11 @@ function actionEndBlock(gs, blockerId) {
     attacker.hp = Math.max(0, attacker.hp - counterDmg);
     addLog(gs, `🌿 反撃${counterDmg}ダメ！`);
   }
-  if (blocker.leaderId === 'autumn' && damage === 0 && totalBlk > 0) {
+  if (blocker.leaderId === 'autumn' && damage === 0 && totalBlk > 0 && totalAtk > 0) {
     attacker.hp = Math.max(0, attacker.hp - 2);
     addLog(gs, `🍂 おーたむ反撃2ダメ！`);
+    gs.lastLeaderDamage = 2;
+    gs.lastLeaderDamageTarget = gs.players.p1 === attacker ? 'p1' : 'p2';
   }
   attacker.attackZone = []; attacker.supportZone = []; blocker.blockZone = [];
   attacker.doubleNextAttack = attacker.doublePending;
@@ -300,10 +305,12 @@ function buildState(gs, myId) {
     myPP: me.pp, myBlockPP: me.blockPP,
     myAttackZone: me.attackZone, myBlockZone: me.blockZone, mySupportZone: me.supportZone,
     myPopeyeAwake: me.popeyeAwake, myPopeyeHealTotal: me.popeyeHealTotal,
+    myRotiPlayed: me.rotiCardsPlayed,
     opHp: opp.hp, opHandCount: opp.hand.length, opLeader: opp.leaderId,
     opPP: opp.pp, opBlockPP: opp.blockPP,
     opAttackZone: opp.attackZone, opBlockZone: opp.blockZone, opSupportZone: opp.supportZone,
     opPopeyeAwake: opp.popeyeAwake, opPopeyeHealTotal: opp.popeyeHealTotal,
+    opRotiPlayed: opp.rotiCardsPlayed,
     phase: gs.phase, isMyTurn, isAttacking, isBlocking,
     round: gs.round, log: [...gs.log],
     winner: gs.winner ? (gs.winner === myId ? 'me' : gs.winner === 'draw' ? 'draw' : 'opponent') : null,
@@ -311,7 +318,9 @@ function buildState(gs, myId) {
     lastDamageIsMe: gs.lastDamageTarget === myId,
     lastHeal: gs.lastHeal || 0,
     lastHealIsMe: gs.lastHealTarget === myId,
-    lastExclusiveCard: gs.lastExclusiveCard && gs.lastExclusiveCardOwner === myId ? gs.lastExclusiveCard : null,
+    lastLeaderDamage: gs.lastLeaderDamage || 0,
+    lastLeaderDamageIsMe: gs.lastLeaderDamageTarget === myId,
+    lastExclusiveCard: gs.lastExclusiveCard || null,
   };
 }
 
@@ -387,7 +396,16 @@ function handle(ws, msg) {
       room.leaders[ws.playerId] = msg.leaderId;
       send(ws, { type: 'leader_chosen', leaderId: msg.leaderId });
       if (room.leaders.p1 && room.leaders.p2) {
-        room.gs = createGame(room.leaders.p1, room.leaders.p2);
+        const swap = Math.random() < 0.5;
+        if (swap) {
+          room.players.forEach((ws, i) => {
+            ws.playerId = i === 0 ? 'p2' : 'p1';
+            room.playerIds[i] = i === 0 ? 'p2' : 'p1';
+          });
+          room.gs = createGame(room.leaders.p2, room.leaders.p1);
+        } else {
+          room.gs = createGame(room.leaders.p1, room.leaders.p2);
+        }
         bcast(room, myId => ({ type: 'game_start', state: buildState(room.gs, myId), playerId: myId }));
       }
       break;
@@ -410,6 +428,8 @@ function handle(ws, msg) {
       // 一時フィールドをリセット
       gs.lastDamage = 0; gs.lastDamageTarget = null;
       gs.lastHeal = 0; gs.lastHealTarget = null;
+      gs.lastLeaderDamage = 0; gs.lastLeaderDamageTarget = null;
+      gs.lastPopeyeAwoke = false;
       gs.lastExclusiveCard = null; gs.lastExclusiveCardOwner = null;
       if (gs.winner) bcast(room, myId => ({ type: 'game_over', isWinner: buildState(gs, myId).winner === 'me' }));
       break;

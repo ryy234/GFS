@@ -353,7 +353,7 @@ input[type="text"]:focus { outline: none; border-color: var(--accent); }
 .zone .card .card-footer { padding: 1px 3px; }
 .zone .card .card-name { font-size: .5rem; }
 .zone .card .card-stat { font-size: .58rem; }
-.zone .card .card-desc { display: none; }
+.zone .card .card-desc { font-size: .42rem; line-height: 1.2; min-height: unset; }
 .zone .card .card-badges { display: none; }
 
 .card-header { display: flex; justify-content: space-between; align-items: center; padding: 3px 5px 1px; flex-shrink: 0; }
@@ -520,6 +520,7 @@ input[type="text"]:focus { outline: none; border-color: var(--accent); }
 
 /* ── ポパイ覚醒進捗バッジ ── */
 .awake-badge.popeye-progress { background: #3b82f6; color: #fff; }
+.awake-badge.roti-badge { background: #10b981; color: #fff; }
 
 /* モーダル */
 .card-modal { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; }

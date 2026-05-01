@@ -283,6 +283,7 @@ const G = {
         if (actor.popeyeHealTotal >= 12) {
           actor.popeyeAwake = true;
           this.addLog(`⭐ スーパーポパイ覚醒！全アタックにライフスティール！`);
+          UI._showPopeyeAwakenAnimation();
         }
       }
     }
@@ -307,6 +308,7 @@ const G = {
       if (actor.rotiCardsPlayed % 4 === 0) {
         opponent.hp = Math.max(0, opponent.hp - 2);
         this.addLog(`🦊 ろてぃリーダー効果：相手に2ダメージ！（${opponent.hp}/20）`);
+        UI._showDamageAnimation(opponent === this.player ? 'player' : 'cpu', 2);
         this._checkWin();
       }
     }
@@ -387,10 +389,11 @@ const G = {
       this.addLog(`🌿 反撃${counterDmg}ダメージ！`);
     }
 
-    // おーたむリーダー効果（ブロックカードを使用してダメージ0になった場合のみ）
-    if (defender.leaderId === 'autumn' && damage === 0 && totalBlk > 0) {
+    // おーたむリーダー効果（アタックがあり、ブロックでダメージ0になった場合のみ）
+    if (defender.leaderId === 'autumn' && damage === 0 && totalBlk > 0 && totalAtk > 0) {
       attacker.hp = Math.max(0, attacker.hp - 2);
       this.addLog(`🍂 おーたむリーダー効果：反撃2ダメージ！`);
+      UI._showDamageAnimation(attacker === this.player ? 'player' : 'cpu', 2);
     }
 
     // ゾーンをクリア
@@ -531,8 +534,14 @@ const UI = {
   _bindEvents() {
     document.getElementById('btn-vs-cpu').onclick = () => this.show('leader');
     document.getElementById('btn-back-leader').onclick = () => this.show('menu');
-    document.getElementById('btn-end-attack').onclick = () => { G.endAttack(); };
-    document.getElementById('btn-end-block').onclick  = () => { G.endBlock(); };
+    document.getElementById('btn-end-attack').onclick = () => {
+      if (Online.ws?.readyState === 1) Online.send({ type: 'end_attack' });
+      else G.endAttack();
+    };
+    document.getElementById('btn-end-block').onclick = () => {
+      if (Online.ws?.readyState === 1) Online.send({ type: 'end_block' });
+      else G.endBlock();
+    };
     document.getElementById('btn-result-retry').onclick = () => this.show('leader');
     document.getElementById('btn-result-menu').onclick  = () => this.show('menu');
     document.getElementById('btn-cardlist')?.addEventListener('click', () => this.showCardList());
@@ -606,6 +615,24 @@ const UI = {
     el.innerHTML = Array(count).fill(0).map(() =>
       `<img class="card-back-thumb" src="card_icon/GFSカード_裏面.png" alt="card back" onerror="this.style.background='#1a1a2e'">`
     ).join('');
+  },
+
+  // ポパイ覚醒演出
+  _showPopeyeAwakenAnimation() {
+    const overlay = document.createElement('div');
+    overlay.className = 'exclusive-anim-overlay';
+    overlay.innerHTML = `
+      <div class="exclusive-anim-box">
+        <div class="exclusive-anim-label" style="color:var(--gold);text-shadow:0 0 16px var(--gold)">⭐ 覚醒！</div>
+        <img src="card_icon/リーダーカード/星の観測者スーパーポパイ_覚醒状態.png" class="exclusive-anim-img" alt="覚醒">
+        <div class="exclusive-anim-name">スーパーポパイ 覚醒！</div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    setTimeout(() => {
+      overlay.classList.add('exclusive-fade-out');
+      setTimeout(() => overlay.remove(), 500);
+    }, 2200);
   },
 
   // フェーズ切り替え演出
@@ -684,8 +711,8 @@ const UI = {
     const playerPP = isAttackPhase ? p.pp : isBlockPhase ? p.blockPP : 0;
 
     // リーダーブロック（HP数値 + PP横並び）
-    this._renderLeaderBlock('player-leader-block', p.leaderId, p.popeyeAwake, p.hp, playerPP, p.popeyeHealTotal);
-    this._renderLeaderBlock('cpu-leader-block',    c.leaderId, c.popeyeAwake, c.hp, c.pp, c.popeyeHealTotal);
+    this._renderLeaderBlock('player-leader-block', p.leaderId, p.popeyeAwake, p.hp, playerPP, p.popeyeHealTotal, p.rotiCardsPlayed);
+    this._renderLeaderBlock('cpu-leader-block',    c.leaderId, c.popeyeAwake, c.hp, c.pp, c.popeyeHealTotal, c.rotiCardsPlayed);
 
     // フェーズ
     const phaseText = {
@@ -749,7 +776,7 @@ const UI = {
     logEl.innerHTML = G.log.map(l => `<div class="log-line">${l}</div>`).join('');
   },
 
-  _renderLeaderBlock(elId, leaderId, awake, hp, pp, healTotal = 0) {
+  _renderLeaderBlock(elId, leaderId, awake, hp, pp, healTotal = 0, rotiPlayed = 0) {
     const el = document.getElementById(elId);
     if (!el || !leaderId) return;
     const leader = LEADER_MAP[leaderId];
@@ -759,7 +786,10 @@ const UI = {
     const hpColor = hp > 13 ? '#4ade80' : hp > 7 ? '#fbbf24' : '#f87171';
     const dots = [0,1,2].map(i => `<span class="pp-dot ${i < pp ? 'filled' : ''}"></span>`).join('');
     let badge = '';
-    if (leaderId === 'popeye') {
+    if (leaderId === 'roti') {
+      const remaining = 4 - (rotiPlayed % 4);
+      badge = `<div class="awake-badge roti-badge">passive${remaining}</div>`;
+    } else if (leaderId === 'popeye') {
       badge = awake
         ? '<div class="awake-badge">覚醒</div>'
         : `<div class="awake-badge popeye-progress">覚醒まで${Math.max(0, 12 - healTotal)}</div>`;
@@ -822,7 +852,7 @@ const UI = {
         <div class="card disabled" style="--card-color:${TYPE_COLOR[card.type] || '#555'}">
           <div class="card-header">
             <span class="card-cost">${card.cost}💎</span>
-            <span class="card-type-label">${card.type === 'attack' ? '⚔️' : card.type === 'block' ? '🛡' : '✨'}</span>
+            <span class="card-type-label">${card.type === 'attack' ? '⚔️' : card.type === 'block' ? '🛡️' : '✨'}</span>
           </div>
           <div class="card-img-wrap">
             <img src="${card.image}" alt="${card.name}" loading="lazy" onerror="this.parentNode.style.background='#1a1a2e'">
@@ -881,7 +911,7 @@ const UI = {
           <span class="card-cost">${cost}💎</span>
           ${badges.join('')}
         </div>
-        <span class="card-type-label">${card.type === 'attack' ? '⚔️' : card.type === 'block' ? '🛡' : '✨'}</span>
+        <span class="card-type-label">${card.type === 'attack' ? '⚔️' : card.type === 'block' ? '🛡️' : '✨'}</span>
       </div>
       <div class="card-img-wrap">
         <img src="${card.image}" alt="${card.name}" loading="lazy" onerror="this.parentNode.style.background='#1a1a2e'">
@@ -997,14 +1027,19 @@ const Online = {
   },
 
   _render(state) {
-    // リーダーブロック（HP + PP 統合）
-    const ppVal = state.isAttacking ? state.myPP : state.isBlocking ? state.myBlockPP : 0;
-    // 相手がブロック中かどうかでblockPPとppを切り替え
+    // リーダーブロック（HP + PP 統合） — 常時PP表示
+    const ppVal = state.isAttacking ? state.myPP : state.isBlocking ? state.myBlockPP : state.myPP;
     const opIsBlocking = (state.phase === 'p2_block' && this.playerId === 'p1') ||
                          (state.phase === 'p1_block' && this.playerId === 'p2');
     const opPPVal = opIsBlocking ? (state.opBlockPP || 0) : (state.opPP || 0);
-    UI._renderLeaderBlock('player-leader-block', state.myLeader, state.myPopeyeAwake, state.myHp, ppVal, state.myPopeyeHealTotal);
-    UI._renderLeaderBlock('cpu-leader-block',    state.opLeader, state.opPopeyeAwake, state.opHp, opPPVal, state.opPopeyeHealTotal);
+    UI._renderLeaderBlock('player-leader-block', state.myLeader, state.myPopeyeAwake, state.myHp, ppVal, state.myPopeyeHealTotal, state.myRotiPlayed);
+    UI._renderLeaderBlock('cpu-leader-block',    state.opLeader, state.opPopeyeAwake, state.opHp, opPPVal, state.opPopeyeHealTotal, state.opRotiPlayed);
+
+    // ポパイ覚醒演出
+    if (state.myPopeyeAwake && !this._prevMyPopeyeAwake) UI._showPopeyeAwakenAnimation();
+    if (state.opPopeyeAwake && !this._prevOpPopeyeAwake) UI._showPopeyeAwakenAnimation();
+    this._prevMyPopeyeAwake = state.myPopeyeAwake;
+    this._prevOpPopeyeAwake = state.opPopeyeAwake;
 
     // フェーズ
     const phaseLabel = {
@@ -1081,7 +1116,7 @@ const Online = {
       }
     }
 
-    // 専用カード演出
+    // 専用カード演出（自分・相手どちらの発動でも表示）
     if (state.lastExclusiveCard) {
       const excCard = CARD_MAP[state.lastExclusiveCard];
       if (excCard) UI._showExclusiveAnimation(excCard);
@@ -1091,16 +1126,18 @@ const Online = {
     if (state.lastDamage > 0) {
       UI._showDamageAnimation(state.lastDamageIsMe ? 'player' : 'cpu', state.lastDamage);
     }
+    // リーダー効果ダメージ演出
+    if (state.lastLeaderDamage > 0) {
+      UI._showDamageAnimation(state.lastLeaderDamageIsMe ? 'player' : 'cpu', state.lastLeaderDamage);
+    }
     // 回復演出
     if (state.lastHeal > 0) {
       UI._showHealAnimation(state.lastHealIsMe ? 'player' : 'cpu', state.lastHeal);
     }
 
-    // ボタン
+    // ボタン（onclickは_bindEventsで一元管理）
     document.getElementById('btn-end-attack').disabled = !(state.isMyTurn && state.isAttacking);
     document.getElementById('btn-end-block').disabled  = !(state.isMyTurn && state.isBlocking);
-    document.getElementById('btn-end-attack').onclick = () => Online.send({ type: 'end_attack' });
-    document.getElementById('btn-end-block').onclick  = () => Online.send({ type: 'end_block' });
 
     // ログ
     document.getElementById('battle-log').innerHTML = state.log.map(l => `<div class="log-line">${l}</div>`).join('');
