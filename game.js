@@ -1041,12 +1041,13 @@ const Online = {
     this._prevMyPopeyeAwake = state.myPopeyeAwake;
     this._prevOpPopeyeAwake = state.opPopeyeAwake;
 
-    // フェーズ
+    // フェーズ（this.playerId = Online.playerId を使う）
+    const pid = this.playerId;
     const phaseLabel = {
-      p1_attack: state.playerId === 'p1' ? '⚔️ あなたのアタック' : '🤖 相手のアタック中...',
-      p2_block:  state.playerId === 'p2' ? '🛡 あなたのブロック' : '⏳ 相手ブロック中...',
-      p2_attack: state.playerId === 'p2' ? '⚔️ あなたのアタック' : '🤖 相手のアタック中...',
-      p1_block:  state.playerId === 'p1' ? '🛡 あなたのブロック' : '⏳ 相手ブロック中...',
+      p1_attack: pid === 'p1' ? '⚔️ あなたのアタック' : '🤖 相手のアタック中...',
+      p2_block:  pid === 'p2' ? '🛡 あなたのブロック' : '⏳ 相手ブロック中...',
+      p2_attack: pid === 'p2' ? '⚔️ あなたのアタック' : '🤖 相手のアタック中...',
+      p1_block:  pid === 'p1' ? '🛡 あなたのブロック' : '⏳ 相手ブロック中...',
     };
     document.getElementById('phase-display').textContent = phaseLabel[state.phase] || state.phase;
     document.getElementById('round-display').textContent = `Round ${state.round}`;

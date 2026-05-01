@@ -396,15 +396,16 @@ function handle(ws, msg) {
       room.leaders[ws.playerId] = msg.leaderId;
       send(ws, { type: 'leader_chosen', leaderId: msg.leaderId });
       if (room.leaders.p1 && room.leaders.p2) {
-        const swap = Math.random() < 0.5;
-        if (swap) {
-          room.players.forEach((ws, i) => {
-            ws.playerId = i === 0 ? 'p2' : 'p1';
-            room.playerIds[i] = i === 0 ? 'p2' : 'p1';
-          });
-          room.gs = createGame(room.leaders.p2, room.leaders.p1);
-        } else {
-          room.gs = createGame(room.leaders.p1, room.leaders.p2);
+        // 先攻をランダムに決定（p1/p2のIDは変えずゲーム内部のphaseで制御）
+        const p2GoesFirst = Math.random() < 0.5;
+        room.gs = createGame(room.leaders.p1, room.leaders.p2);
+        if (p2GoesFirst) {
+          // p2先攻：p1の初期ドローを戻してp2にドロー、フェーズをp2_attackに
+          const drawn = room.gs.players.p1.hand.pop();
+          if (drawn) room.gs.players.p1.deck.unshift(drawn);
+          if (room.gs.players.p2.hand.length < 8) room.gs.players.p2.hand.push(room.gs.players.p2.deck.pop());
+          room.gs.phase = 'p2_attack';
+          room.gs.log = ['🃏 ゲーム開始！P2のアタックフェーズ'];
         }
         bcast(room, myId => ({ type: 'game_start', state: buildState(room.gs, myId), playerId: myId }));
       }
